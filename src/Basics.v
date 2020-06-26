@@ -1228,14 +1228,25 @@ Qed.
 Theorem andb_true_elim2 : forall b c : bool,
   andb b c = true -> c = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b.
+  intros [] [].
+  + reflexivity.
+  + destruct b eqn: E.
+    - simpl. reflexivity.
+    - simpl. reflexivity.
+  Qed.
+
+
 (** [] *)
 
 (** **** Exercise: 1 star, standard (zero_nbeq_plus_1)  *)
 Theorem zero_nbeq_plus_1 : forall n : nat,
   0 =? (n + 1) = false.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros [|n].
+  + simpl. reflexivity.
+  + simpl. reflexivity.
+  Qed.
 (** [] *)
 
 (* ================================================================= *)
@@ -1342,7 +1353,8 @@ Theorem identity_fn_applied_twice :
   (forall (x : bool), f x = x) ->
   forall (b : bool), f (f b) = b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros f H b. rewrite -> H. rewrite -> H. reflexivity. Qed.
+
 
 (** [] *)
 
@@ -1352,7 +1364,14 @@ Proof.
     to the previous one but where the second hypothesis says that the
     function [f] has the property that [f x = negb x]. *)
 
-(* FILL IN HERE *)
+Theorem negation_fn_applied_twice : 
+  forall (f : bool -> bool),
+  (forall (x: bool), f x = (negb x)) ->
+  forall (b : bool), f (f b) = b.
+Proof. intros f H b. rewrite -> H. rewrite -> H. destruct b.
+  + simpl. reflexivity.
+  + simpl. reflexivity.
+  Qed.
 (* The [Import] statement on the next line tells Coq to use the
    standard library String module.  We'll use strings more in later
    chapters, but for the moment we just need syntax for literal
@@ -1375,7 +1394,10 @@ Theorem andb_eq_orb :
   (andb b c = orb b c) ->
   b = c.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros [] c.
+  + simpl. intros []. reflexivity.
+  + simpl. intros []. reflexivity.
+  Qed.
 
 (** [] *)
 
@@ -1414,11 +1436,19 @@ Inductive bin : Type :=
         for binary numbers, and a function [bin_to_nat] to convert
         binary numbers to unary numbers. *)
 
-Fixpoint incr (m:bin) : bin
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint incr (m:bin) : bin :=
+  match m with
+  | Z => B Z
+  | A(n) => B n
+  | B(n) => A (incr n)
+  end.
 
-Fixpoint bin_to_nat (m:bin) : nat
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint bin_to_nat (m:bin) : nat := 
+  match m with
+  | Z => 0
+  | A(n) => (bin_to_nat n) * 2
+  | B(n) => (bin_to_nat n) * 2 + 1
+  end.
 
 (**    (b) Write five unit tests [test_bin_incr1], [test_bin_incr2], etc.
         for your increment and binary-to-unary functions.  (A "unit
@@ -1428,7 +1458,35 @@ Fixpoint bin_to_nat (m:bin) : nat
         then converting it to unary should yield the same result as
         first converting it to unary and then incrementing. *)
 
-(* FILL IN HERE *)
+Example test_bin_incr1 : incr (B Z) = A (B Z).
+Proof. reflexivity. Qed.
+
+Example test_bin_incr2 : incr (A (B Z)) = B (B Z).
+Proof. reflexivity. Qed.
+
+Example test_bin_incr3 : incr (B (B Z)) = A (A (B Z)).
+Proof. reflexivity. Qed.
+
+Example test_bin_incr4 : incr (B (A (B Z))) = A (B (B Z)).
+Proof. reflexivity. Qed.
+
+Example test_bin_incr5 : incr (B (B (B Z))) = A( A (A (B Z))).
+Proof. reflexivity. Qed.
+
+Example test_bin_to_nat1 : bin_to_nat (B Z) = 1.
+Proof. reflexivity. Qed.
+
+Example test_bin_to_nat2 : bin_to_nat (A (B Z)) = 2.
+Proof. reflexivity. Qed.
+
+Example test_bin_to_nat3 : bin_to_nat (B (B Z)) = 3.
+Proof. reflexivity. Qed.
+
+Example test_bin_to_nat4 : bin_to_nat (B (B (B Z))) = 7.
+Proof. reflexivity. Qed.
+
+Example test_bin_to_nat5 : bin_to_nat (A (A (A (B Z)))) = 8.
+Proof. reflexivity. Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_binary : option (nat*string) := None.
