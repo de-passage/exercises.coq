@@ -509,17 +509,66 @@ Definition manual_grade_for_plus_comm_informal : option (nat*string) := None.
 Theorem plus_swap : forall n m p : nat,
   n + (m + p) = m + (n + p).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m p.
+  rewrite -> plus_assoc.
+  assert (H: n + m = m + n). { rewrite <- plus_comm. reflexivity. }
+  rewrite -> H.
+  rewrite plus_assoc.
+  reflexivity.
+  Qed.
 
 (** Now prove commutativity of multiplication.  (You will probably
     need to define and prove a separate subsidiary theorem to be used
     in the proof of this one.  You may find that [plus_swap] comes in
     handy.) *)
 
+Theorem mult_0_comm : forall n : nat,
+  n * 0 = 0.
+Proof.
+    induction n as [|m M0'].
+    - reflexivity.
+    - simpl. rewrite M0'. reflexivity.
+    Qed.
+
+Theorem mult_1_comm : forall n : nat,
+  n * 1 = n.
+Proof.
+  induction n as [| m M1 ].
+  - reflexivity.
+  - simpl. rewrite M1. reflexivity.
+  Qed.
+
+Theorem mult_1_distrib : forall m n : nat,
+  m * (1 + n) = m + m * n.
+Proof.
+    intros m [| n].
+    + rewrite mult_0_comm. rewrite <- plus_n_O. rewrite mult_1_comm. rewrite <- plus_n_O. reflexivity.
+    + induction m as [| m HM ].
+      - reflexivity.
+      - assert (I: S m * (1 + S n) = (1 + S n) + (m * (1 + S n))).
+        { reflexivity. }
+        rewrite I. rewrite HM. rewrite plus_swap.
+        assert (I': S n + m * S n = S m * S n).
+          { reflexivity. }
+        rewrite <- I'.
+        rewrite plus_assoc. rewrite plus_assoc.
+        assert (P: m + 1 = S m). { rewrite plus_comm. reflexivity. }
+        rewrite P. rewrite plus_assoc. reflexivity.
+  Qed.
+
 Theorem mult_comm : forall m n : nat,
   m * n = n * m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m.
+  induction n as [| n H].
+  + rewrite mult_0_comm. reflexivity.
+  + assert (I: S n = (1 + n)). { reflexivity. }
+    simpl.
+    rewrite I.
+    rewrite mult_1_distrib.
+    rewrite H.
+    reflexivity.
+  Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (more_exercises)  
