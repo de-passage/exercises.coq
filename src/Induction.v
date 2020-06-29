@@ -877,55 +877,61 @@ Fixpoint normalize (b : bin) : bin :=
   | B b' => B (normalize b')
 end.
 
-Example normalize_test1 : normalize (A Z) = Z.
-Proof. reflexivity. Qed.
 
-Example normalize_test2 : normalize (A (B (A (A Z)))) = A (B Z).
-Proof. reflexivity. Qed.
-
-Example normalize_test3 : normalize (B (A (A (A (A Z))))) = B Z.
-Proof. reflexivity. Qed.
-
-Theorem normalize_outward_a :
-  forall b, b = normalize b -> A b = A (normalize b).
-Proof. intros b H. rewrite <- H. reflexivity. Qed.
-
-Theorem normalize_z : normalize Z = normalize (A Z).
-Proof. reflexivity. Qed.
-
-Theorem elim_nat_to_bin : forall a b,
-  nat_to_bin a = b -> a = bin_to_nat b.
+Theorem nat_to_bin_double_Sn : forall n : nat,
+  nat_to_bin (S n + S n) = A (incr (nat_to_bin n)).
 Proof.
-  intros a b H.
-  induction a as [| a HA ].
-  + rewrite eq_nat_to_bin.
+  intros n. induction n as [| n' IHn'].
+  - reflexivity.
+  - simpl. simpl in IHn'. rewrite <- plus_n_Sm. simpl. rewrite IHn'. reflexivity.
+Qed.
 
-Theorem a_outward : forall (b : bin),
-  (nat_to_bin (bin_to_nat b) = normalize b) ->
-    (nat_to_bin (bin_to_nat (A b))) = (normalize (A b)).
+Theorem nat_to_bin_double_Sn_plus_1 : forall n : nat,
+  nat_to_bin (S n + S n + 1) = B (incr (nat_to_bin n)).
 Proof.
-  intros b H.
-  induction b as [| a HA | b HB ].
+  intros n. induction n as [| n' IHn'].
+  - reflexivity.
+  - simpl. simpl in IHn'. rewrite <- plus_n_Sm. simpl.
+    replace (S (S n')) with (S n' + 1).
+    rewrite plus_assoc.
+    replace (n' + S n' + 1 + 0) with (n' + S n' + 1).
+    rewrite IHn'. reflexivity.
+    + rewrite <- plus_n_O. reflexivity.
+    + rewrite <- plus_n_Sm. rewrite <- plus_n_O. reflexivity.
+Qed.
+
+Theorem double_Sn_mult_2 : forall n: nat,
+  S n + S n = S n * 2.
+Proof.
+  intros [| n ].
   + reflexivity.
-  + 
+  + simpl. rewrite <- plus_n_Sm. 
+    replace (S (n + S n)) with (S ( S (n + n))).
+    replace (n + n) with (n * 2).
+    reflexivity.
+    - rewrite mult_comm. simpl. rewrite <- plus_n_O. reflexivity.
+    - assert (I: S n + n = n + S n). {
+        rewrite plus_comm. reflexivity.
+    } rewrite <- I. simpl. reflexivity.
+  Qed.
 
-Theorem b_outward : forall (b : bin),
-  nat_to_bin (bin_to_nat b) = normalize b ->
-    nat_to_bin (bin_to_nat (B b)) = normalize (B b).
+
+Theorem bin_nat_bin_eq_norm_bin : forall m : bin,
+  nat_to_bin (bin_to_nat m) = normalize m.
 Proof.
-Admitted.
-
-Theorem bin_to_nat_to_bin_normalize : forall (b : bin),
-  (nat_to_bin (bin_to_nat b)) = normalize b.
-Proof. 
-  induction b as [| a HA | b HB ].
-  + reflexivity.
-  + rewrite a_outward. 
-    - reflexivity.
-    - rewrite HA. reflexivity. 
-  + rewrite b_outward.
-    - reflexivity.
-    - rewrite HB. reflexivity.
+  intros m.
+  induction m as [| m' IHm' | m'' IHm''].
+  - reflexivity.
+  - simpl. rewrite <- IHm'. destruct (bin_to_nat m') as [| n'].
+    + reflexivity.
+    + rewrite <- double_Sn_mult_2. rewrite -> nat_to_bin_double_Sn. simpl.
+      destruct (nat_to_bin n').
+      * reflexivity.
+      * reflexivity.
+      * reflexivity.
+  - simpl. rewrite <- IHm''. destruct (bin_to_nat m'') as [| n'].
+    + reflexivity.
+    + rewrite <- double_Sn_mult_2. rewrite -> nat_to_bin_double_Sn_plus_1. reflexivity.
 Qed.
 
 (* Do not modify the following line: *)
