@@ -74,7 +74,9 @@ Theorem silly_ex :
      oddb 3 = true ->
      evenb 4 = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros eq1 eq2.
+  apply eq2.
+Qed.
 (** [] *)
 
 (** To use the [apply] tactic, the (conclusion of the) fact
@@ -107,7 +109,14 @@ Theorem rev_exercise1 : forall (l l' : list nat),
      l = rev l' ->
      l' = rev l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros l l' eq1.
+  symmetry.
+  rewrite <- rev_involutive.
+  assert (S: forall X (l1 l2: list X), l1 = l2 -> rev l1 = rev l2).
+    { intros X l1 l2 H. rewrite H. reflexivity. }
+  apply S.
+  apply eq1.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard, optional (apply_rewrite)  
@@ -116,7 +125,7 @@ Proof.
     [rewrite].  What are the situations where both can usefully be
     applied? *)
 
-(* FILL IN HERE 
+(* Apply takes a previously defined lemma and substitutes the expression for the premises of said lemma. Rewrite substitute parts of the expression.
 
     [] *)
 
@@ -176,7 +185,10 @@ Example trans_eq_exercise : forall (n m o p : nat),
      (n + p) = m ->
      (n + p) = (minustwo o).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m o p eq1 eq2.
+  apply trans_eq with (m).
+  apply eq2. apply eq1.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -273,7 +285,11 @@ Example injection_ex3 : forall (X : Type) (x y z : X) (l j : list X),
   y :: l = x :: j ->
   x = y.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X x y z l j eq1 eq2.
+  injection eq2.
+  intros H1 H2.
+  symmetry. apply H2.
+Qed.
 (** [] *)
 
 (** So much for injectivity of constructors.  What about disjointness?
@@ -345,7 +361,9 @@ Example discriminate_ex3 :
     x :: y :: l = [] ->
     x = z.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X w y z l j contra.
+  discriminate contra.
+Qed.
 (** [] *)
 
 (** The injectivity of constructors allows us to reason that
@@ -419,8 +437,13 @@ Theorem plus_n_n_injective : forall n m,
      n + n = m + m ->
      n = m.
 Proof.
-  intros n. induction n as [| n'].
-  (* FILL IN HERE *) Admitted.
+  intros n. induction n as [| n' IH].
+  + simpl. intros [|m] H. - reflexivity. - discriminate.
+  + simpl. intros [|m] H. - discriminate.   
+    - simpl in H. apply f_equal. 
+      rewrite <- ?plus_n_Sm in H. injection H.
+      apply IH.
+Qed. 
 (** [] *)
 
 (* ################################################################# *)
@@ -577,7 +600,11 @@ Proof.
 Theorem eqb_true : forall n m,
     n =? m = true -> n = m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction n as [| n H ].
+  + intros [| m]. - reflexivity. - discriminate.
+  + intros [| m] eq. - discriminate.
+    - apply f_equal. apply H. simpl in eq. apply eq.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced (eqb_true_informal)  
@@ -585,7 +612,16 @@ Proof.
     Give a careful informal proof of [eqb_true], being as explicit
     as possible about quantifiers. *)
 
-(* FILL IN HERE *)
+  (** forall n m, n =? m -> n = m.
+    Given a nat n, we reason by induction:
+    + if n = 0, then the only nat m such as (0 =? m) = 0 is 0 by definition of =?
+    + if n =/= 0, then given the induction hypothesis (forall x, n =? x = true -> n = x), we need to prove that there exists an m such as (S n =? m) = true -> S n = m 
+      Given an arbitrary m, we have to cases to consider.
+      - m = 0. in this case we have (n ?= 0) = true, absurd by definition of =?. So m =/= 0
+      - m = S m'. In this case, we need to prove that (S n =? S m') = true -> S n = S m. By definition of =?, (S n =? S m') = (n = m'). 
+        Since S is injective we also have S n = S m -> n = m.
+        And then we reason backward, mix and match and get to the result. I'm tired.
+  *)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_informal_proof : option (nat*string) := None.
@@ -707,7 +743,14 @@ Theorem nth_error_after_last: forall (n : nat) (X : Type) (l : list X),
      length l = n ->
      nth_error l n = None.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n X l.
+  generalize dependent n.
+  induction l as [| x xs IH ].
+  + reflexivity.
+  + simpl. intros [| n] H.
+    - discriminate H.
+    - simpl. apply IH. injection H. intros H'. apply H'.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
