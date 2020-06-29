@@ -70,8 +70,7 @@ From LF Require Export Basics.
         [Compiled library Foo makes inconsistent assumptions over
         library Bar]
 
-    check whether you have multiple installations of Coq on your machine.
-    It may be that commands (like [coqc]) that you execute in a terminal
+    check whether you have multiple installations of Coq on your machine. It may be that commands (like [coqc]) that you execute in a terminal
     window are getting a different version of Coq than commands executed by
     Proof General or CoqIDE.
 
@@ -799,15 +798,42 @@ Fixpoint nat_to_bin (n:nat) : bin :=
   | S m => incr (nat_to_bin m)
   end.
 
+Example nat_to_bin_test1 : nat_to_bin 0 = Z. 
+Proof. reflexivity. Qed.
+
+Example nat_to_bin_test2 : nat_to_bin 1 = B Z. 
+Proof. reflexivity. Qed.
+
+Example nat_to_bin_test3 : nat_to_bin 2 = A (B Z). 
+Proof. reflexivity. Qed.
+
+Example nat_to_bin_test4 : nat_to_bin 4 = A (A (B Z)). 
+Proof. reflexivity. Qed.
+
+Example nat_to_bin_test5 : nat_to_bin 7 = B (B (B Z)). 
+Proof. reflexivity. Qed.
+
 (** Prove that, if we start with any [nat], convert it to binary, and
     convert it back, we get the same [nat] we started with.  (Hint: If
     your definition of [nat_to_bin] involved any extra functions, you
     may need to prove a subsidiary lemma showing how such functions
     relate to [nat_to_bin].) *)
+    
+Theorem nat_to_bin_pres_incr : forall n: nat,
+  nat_to_bin (S n) = incr (nat_to_bin n).
+Proof.
+  reflexivity.
+Qed.
 
 Theorem nat_bin_nat : forall n, bin_to_nat (nat_to_bin n) = n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction n as [| n HN ].
+  + reflexivity.
+  + rewrite nat_to_bin_pres_incr.
+    rewrite bin_to_nat_pres_incr.
+    rewrite HN.
+    reflexivity.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_binary_inverse_a : option (nat*string) := None.
@@ -818,7 +844,11 @@ Definition manual_grade_for_binary_inverse_a : option (nat*string) := None.
         the same number we started with.  However, this is not the
         case!  Explain (in a comment) what the problem is. *)
 
-(* FILL IN HERE *)
+(* There is an infinity of ways to represent any bin, by adding As (0) in front of the Z. Z = A Z = A (A Z)... 
+Also they ultimately represent the same value, 
+they are distinct terms and will fail to unify in a case such as:
+  nat_to_bin (bin_to_nat (A Z)) = Z != A Z
+*)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_binary_inverse_b : option (nat*string) := None.
@@ -835,7 +865,68 @@ Definition manual_grade_for_binary_inverse_b : option (nat*string) := None.
         proof -- that will allow the main proof to make progress.) Don't
         define thi using nat_to_bin and bin_to_nat! *)
 
-(* FILL IN HERE *)
+Fixpoint normalize (b : bin) : bin :=
+  match b with
+  | Z => Z
+  | A b' => 
+    match (normalize b') with 
+    | Z => Z
+    | A b'' => A (A b'')
+    | B b'' => A (B b'')
+    end
+  | B b' => B (normalize b')
+end.
+
+Example normalize_test1 : normalize (A Z) = Z.
+Proof. reflexivity. Qed.
+
+Example normalize_test2 : normalize (A (B (A (A Z)))) = A (B Z).
+Proof. reflexivity. Qed.
+
+Example normalize_test3 : normalize (B (A (A (A (A Z))))) = B Z.
+Proof. reflexivity. Qed.
+
+Theorem normalize_outward_a :
+  forall b, b = normalize b -> A b = A (normalize b).
+Proof. intros b H. rewrite <- H. reflexivity. Qed.
+
+Theorem normalize_z : normalize Z = normalize (A Z).
+Proof. reflexivity. Qed.
+
+Theorem elim_nat_to_bin : forall a b,
+  nat_to_bin a = b -> a = bin_to_nat b.
+Proof.
+  intros a b H.
+  induction a as [| a HA ].
+  + rewrite eq_nat_to_bin.
+
+Theorem a_outward : forall (b : bin),
+  (nat_to_bin (bin_to_nat b) = normalize b) ->
+    (nat_to_bin (bin_to_nat (A b))) = (normalize (A b)).
+Proof.
+  intros b H.
+  induction b as [| a HA | b HB ].
+  + reflexivity.
+  + 
+
+Theorem b_outward : forall (b : bin),
+  nat_to_bin (bin_to_nat b) = normalize b ->
+    nat_to_bin (bin_to_nat (B b)) = normalize (B b).
+Proof.
+Admitted.
+
+Theorem bin_to_nat_to_bin_normalize : forall (b : bin),
+  (nat_to_bin (bin_to_nat b)) = normalize b.
+Proof. 
+  induction b as [| a HA | b HB ].
+  + reflexivity.
+  + rewrite a_outward. 
+    - reflexivity.
+    - rewrite HA. reflexivity. 
+  + rewrite b_outward.
+    - reflexivity.
+    - rewrite HB. reflexivity.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_binary_inverse_c : option (nat*string) := None.
