@@ -1174,6 +1174,10 @@ Qed.
     statement that [split] is the inverse of [combine]?  When is this
     property true?
 
+    length l1 = length l2 -> 
+    combine l1 l2 = l -> split l = (l1, l2).
+
+
     Complete the definition of [split_combine_statement] below with a
     property that states that [split] is the inverse of
     [combine]. Then, prove that the property holds. (Be sure to leave
@@ -1181,14 +1185,59 @@ Qed.
     things than necessary.  Hint: what property do you need of [l1]
     and [l2] for [split (combine l1 l2) = (l1,l2)] to be true?) *)
 
-Definition split_combine_statement : Prop
-  (* ("[: Prop]" means that we are giving a name to a
-     logical proposition here.) *)
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition split_combine_statement : Prop :=
+  forall (X Y: Type) (l1: list X) (l2: list Y) (l: list (X * Y)),
+  length l1 = length l2 -> combine l1 l2 = l -> split l = (l1, l2).
+
+Theorem length_nil_eq : forall (X: Type) (l: list X), 
+  length l = @length X [] -> l = [].
+Proof.
+  intros X [| l ls ].
+  + reflexivity.
+  + discriminate.
+Qed. 
+
+Theorem combine_nil_implies_nil:
+  forall (X Y: Type) (l1: list X) (l2: list Y),
+  length l1 = length l2 -> combine l1 l2 = [] -> (l1, l2) = ([], []).
+Proof.
+  intros X Y l1 l2 eq1 eq2.
+  destruct l1 as [| x xs ] eqn: Dl1, l2 as [| y ys ] eqn: Dl2.
+  + reflexivity.
+  + discriminate eq1.
+  + discriminate eq1.
+  + simpl in eq2. discriminate eq2.
+Qed.
 
 Theorem split_combine : split_combine_statement.
 Proof.
-(* FILL IN HERE *) Admitted.
+  unfold split_combine_statement.
+  intros X Y l1 l2 l.
+  generalize dependent l1.
+  generalize dependent l2.
+  induction l as [| (x, y) ls IHl].
+  + destruct l1 as [| x xs ] eqn:Dl1, l2 as [| y ys ] eqn:Dl2.
+    - reflexivity.
+    - discriminate. 
+    - discriminate.
+    - intros eq1 eq2. apply combine_nil_implies_nil in eq2.
+      * simpl. symmetry. apply eq2. 
+      * apply eq1.
+  + destruct l1 as [| l1h l1t ] eqn:Dl1, l2 as [| l2h l2t ] eqn:Dl2.
+    - discriminate.
+    - discriminate.
+    - discriminate.
+    - intros eq1 eq2. simpl. destruct (split ls) as [x' y'] eqn: Dsl.
+      simpl in eq2. injection eq2 as eq2_1 eq2_2 eq2_3.
+      assert (A: (x', y') = (l1t, l2t)
+              -> (x::x',y::y') = (l1h::l1t, l2h::l2t) ).
+      {  intros eqA. injection eqA as eqA1 eqA2.
+         rewrite eqA1, eqA2, eq2_1, eq2_2. reflexivity.
+      }
+      apply A. apply IHl. simpl in eq1. injection eq1 as eq1'.
+      apply eq1'. apply eq2_3.
+Qed.
+
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_split_combine : option (nat*string) := None.
