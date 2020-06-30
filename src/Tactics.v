@@ -931,48 +931,31 @@ Fixpoint split {X Y : Type} (l : list (X*Y))
 (** Prove that [split] and [combine] are inverses in the following
     sense: *)
 
-Theorem split_nil : forall (X Y: Type) (l: list (X * Y)),
-  split l = ([], []) -> l = [].
-Proof.
-  intros X Y l.
-  destruct l as [|x xs] eqn: D.
-  + reflexivity.
-  + simpl. destruct x. destruct (split xs).
-    intros eq. discriminate.
-Qed.
-
-Theorem split_injective : forall (X Y: Type) (l1 l2: list (X * Y)),
-  split l1 = split l2 -> l1 = l2.
-Proof.
-  intros X Y l1.
-  induction l1 as [| x xs IH ].
-  + intros l2. simpl. symmetry. apply split_nil. rewrite H. 
-    reflexivity.
-  + intros l2 eq.
-Admitted.
-
-
 Theorem combine_split : forall X Y (l : list (X * Y)) l1 l2,
   split l = (l1, l2) ->
   combine l1 l2 = l.
 Proof.
-  intros X Y l l1 l2.
-  destruct combine as [| z zs] eqn: D.
-  + intros eq. assert (A: split [] = split l -> [] = l). 
-    { intros eq'. 
-  (*
-  induction l as [| x xs IH ].
-  + simpl. intros [|l1 l1s]  [|l2 l2s] eq.
-    - reflexivity.
-    - discriminate eq.
-    - discriminate eq.
-    - discriminate eq.
-  + intros [|l1 l1s] [|l2 l2s].
-    - destruct (x :: xs) eqn: D. 
-      * reflexivity.
-      * intros eq. apply split_nil in eq. simpl.
-    *)
-Admitted.
+  intros X Y l.
+  induction l as [| l ls IHl ].
+  + simpl. intros l1 l2 eq. injection eq as Ieq1 Ieq2.
+    rewrite <- Ieq1, <- Ieq2. reflexivity.
+  + intros l1 l2. destruct l as [ x y ] eqn: Dl,
+    l1 as [| l1h l1t ] eqn: Dl1, l2 as [| l2h l2t ] eqn: Dl2.
+    - simpl. destruct (split ls).
+      intros eq. discriminate eq.
+    - simpl. destruct (split ls).
+      intros eq. discriminate eq.
+    - simpl. destruct (split ls). intros eq. discriminate eq.
+    - simpl. destruct (split ls) as [lx ly] eqn: Dls.
+      intros eq. injection eq as eq1 eq2 eq3 eq4.
+      rewrite <- eq1, <- eq3.
+      assert (Al: forall (A: Type) (a:A) (k j: list A),
+        k = j -> a :: k = a :: j). {
+          intros A a k j eq. rewrite eq. reflexivity.
+        }
+      apply Al. rewrite <- eq2, <- eq4.
+      apply IHl. reflexivity.
+Qed.
 (** [] *)
 
 (** The [eqn:] part of the [destruct] tactic is optional: We've chosen
