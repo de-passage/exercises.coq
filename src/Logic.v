@@ -923,8 +923,8 @@ Qed.
     equivalent to [Podd n] when [n] is odd and equivalent to [Peven n]
     otherwise. *)
 
-Definition combine_odd_even (Podd Peven : nat -> Prop) : nat -> Prop
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition combine_odd_even (Podd Peven : nat -> Prop) : nat -> Prop :=
+  fun (n: nat) => if oddb n then Podd n else Peven n.
 
 (** To test your definition, prove the following facts: *)
 
@@ -934,7 +934,12 @@ Theorem combine_odd_even_intro :
     (oddb n = false -> Peven n) ->
     combine_odd_even Podd Peven n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros Podd Peven n H1 H2.
+  destruct (oddb n) eqn:D.
+  + unfold combine_odd_even. rewrite D. simpl. apply H1. reflexivity.
+  + unfold combine_odd_even. rewrite D. simpl. apply H2. reflexivity.
+Qed.
+
 
 Theorem combine_odd_even_elim_odd :
   forall (Podd Peven : nat -> Prop) (n : nat),
@@ -942,7 +947,9 @@ Theorem combine_odd_even_elim_odd :
     oddb n = true ->
     Podd n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros Podd Peven n H1 H2.
+  unfold combine_odd_even in H1. rewrite H2 in H1. apply H1.
+Qed.
 
 Theorem combine_odd_even_elim_even :
   forall (Podd Peven : nat -> Prop) (n : nat),
@@ -950,7 +957,9 @@ Theorem combine_odd_even_elim_even :
     oddb n = false ->
     Peven n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros Podd Peven n H1 H2.
+  unfold combine_odd_even in H1. rewrite H2 in H1. apply H1.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -1255,8 +1264,46 @@ Definition tr_rev {X} (l : list X) : list X :=
     call); a decent compiler will generate very efficient code in this
     case.  Prove that the two definitions are indeed equivalent. *)
 
+Theorem app_assoc : forall (X: Type) (l1 l2 l3: list X),
+  l1 ++ (l2 ++ l3) = (l1 ++ l2) ++ l3.
+Proof.
+  intros X l1 l2 l3.
+  induction l1 as [| l ls IHl ].
+  + reflexivity.
+  + simpl. rewrite IHl. reflexivity.
+Qed.
+
+Theorem tr_rev_interm : forall (X: Type) (m ms: list X),
+    (rev_append ms m) = (rev_append ms []) ++ m.
+Proof.
+  intros X m ms.
+  generalize dependent m.
+  induction ms as [| l' ls' Hl' ].
+  + reflexivity.
+  + intros m. simpl. 
+    replace (rev_append ls' [l']) with (rev_append ls' [] ++ [l']).
+    simpl. rewrite Hl'. rewrite <- app_assoc. 
+    replace ([l'] ++ m) with (l' :: m).
+    reflexivity. reflexivity. rewrite <- Hl'. reflexivity.
+Qed.
+
+Theorem app_stable_right : forall (X: Type) (l1 l2 l3: list X),
+  l1 = l2 -> l1 ++ l3 = l2 ++ l3.
+Proof.
+  intros X l1 l2 l3 H. rewrite H. reflexivity.
+Qed.
+
 Lemma tr_rev_correct : forall X, @tr_rev X = @rev X.
-(* FILL IN HERE *) Admitted.
+Proof.
+  intros X.
+  apply functional_extensionality.
+  induction x as [| l ls Hl ].
+  + reflexivity.
+  + unfold tr_rev. simpl. rewrite tr_rev_interm.
+    replace (rev_append ls []) with (tr_rev ls).
+    apply app_stable_right. apply Hl. reflexivity.
+Qed.
+
 (** [] *)
 
 (* ================================================================= *)
@@ -1294,8 +1341,15 @@ Theorem evenb_double_conv : forall n,
   exists k, n = if evenb n then double k
                 else S (double k).
 Proof.
-  (* Hint: Use the [evenb_S] lemma from [Induction.v]. *)
-  (* FILL IN HERE *) Admitted.
+  intros n.
+  induction n as [| n Hn ].
+  + exists 0. reflexivity.
+  + destruct Hn as [k H]. rewrite evenb_S.
+    destruct (evenb n) eqn: Den.
+    - simpl. rewrite H. exists(k). reflexivity.
+    - simpl. rewrite H. exists(S k). reflexivity.
+Qed.
+
 (** [] *)
 
 Theorem even_bool_prop : forall n,
@@ -1453,12 +1507,19 @@ Qed.
 Lemma andb_true_iff : forall b1 b2:bool,
   b1 && b2 = true <-> b1 = true /\ b2 = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros [] []. split.
+  + split. reflexivity. reflexivity.
+  + simpl. reflexivity.
+  + split. simpl. intros H. destruct H. split. reflexivity. reflexivity. intros [H1 H2]. rewrite H2. reflexivity.
+  + simpl. split. intros H. rewrite H. split. reflexivity. reflexivity.
+    intros [H1 H2]. apply H1.
+  + simpl. split. intros H. split. apply H. apply H. intros [H1 H2]. apply H1.
+Qed.
 
 Lemma orb_true_iff : forall b1 b2,
   b1 || b2 = true <-> b1 = true \/ b2 = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split. intros H.
 (** [] *)
 
 (** **** Exercise: 1 star, standard (eqb_neq)  
