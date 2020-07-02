@@ -1519,7 +1519,13 @@ Qed.
 Lemma orb_true_iff : forall b1 b2,
   b1 || b2 = true <-> b1 = true \/ b2 = true.
 Proof.
-  split. intros H.
+  intros [] [].
+  + simpl. split. left. reflexivity. reflexivity.
+  + simpl. split. left. reflexivity. reflexivity.
+  + simpl. split. right. reflexivity. reflexivity.
+  + simpl. split. intros H. discriminate H. intros [H|H].
+    discriminate H. discriminate H.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard (eqb_neq)  
@@ -1531,7 +1537,17 @@ Proof.
 Theorem eqb_neq : forall x y : nat,
   x =? y = false <-> x <> y.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction x as [| x], y as [| y].
+  + split. simpl. intros H. discriminate H. unfold not. intros H. destruct H. reflexivity.
+  + split. unfold not. intros H1 H2. discriminate H2.
+    simpl. reflexivity.
+  + split. unfold not. intros H1 H2. discriminate H2.
+    simpl. reflexivity.
+  + split. 
+    - unfold not. simpl. intros H1 H2. apply IHx in H1. unfold not in H1. injection H2. apply H1.
+    - unfold not. intros H. simpl. apply IHx. unfold not. intros H'.
+      apply H. rewrite H'. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (eqb_list)  
@@ -1543,15 +1559,34 @@ Proof.
     definition is correct, prove the lemma [eqb_list_true_iff]. *)
 
 Fixpoint eqb_list {A : Type} (eqb : A -> A -> bool)
-                  (l1 l2 : list A) : bool
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+                  (l1 l2 : list A) : bool :=
+  match l1, l2 with
+  | [], [] => true
+  | x :: xs, y :: ys => eqb x y && eqb_list eqb xs ys
+  | _, _ => false
+  end.
 
 Lemma eqb_list_true_iff :
   forall A (eqb : A -> A -> bool),
     (forall a1 a2, eqb a1 a2 = true <-> a1 = a2) ->
     forall l1 l2, eqb_list eqb l1 l2 = true <-> l1 = l2.
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros A eqb. intros H. 
+  induction l1 as [| x xs Hl ], l2 as [| y ys ].
+  - split. reflexivity. reflexivity.
+  - simpl. split. 
+    + intros H'. discriminate H'. 
+    + intros H'. discriminate H'.
+  - simpl. split.
+    + intros H'. discriminate H'.
+    + intros H'. discriminate H'.
+  - split. + simpl. 
+      intros H'. apply andb_true_iff in H'. destruct H' as [H1 H2]. 
+      apply H in H1. apply Hl in H2. rewrite H1, H2. reflexivity.
+    + simpl. intros H'. injection H' as H1 H2. apply andb_true_iff.
+      split. * apply H. apply H1.
+      * apply Hl. apply H2.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, recommended (All_forallb)  
@@ -1571,7 +1606,15 @@ Fixpoint forallb {X : Type} (test : X -> bool) (l : list X) : bool :=
 Theorem forallb_true_iff : forall X test (l : list X),
    forallb test l = true <-> All (fun x => test x = true) l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X test l.
+  induction l as [|l ls Hl].
+  + simpl. split. reflexivity. reflexivity.
+  + split. simpl.
+    - intros H. apply andb_true_iff in H. 
+    destruct H as [H1 H2]. split. apply H1. apply Hl, H2.
+    - intros [H1 H2]. simpl. apply andb_true_iff. split. apply H1.
+      apply Hl. apply H2.
+Qed.
 
 (** Are there any important properties of the function [forallb] which
     are not captured by this specification? *)
@@ -1709,7 +1752,10 @@ Qed.
 Theorem excluded_middle_irrefutable: forall (P:Prop),
   ~ ~ (P \/ ~ P).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold not.
+  intros P. intros H. apply H. right. intros HP. 
+  apply H. left. apply HP. 
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (not_exists_dist)  
@@ -1730,7 +1776,11 @@ Theorem not_exists_dist :
   forall (X:Type) (P : X -> Prop),
     ~ (exists x, ~ P x) -> (forall x, P x).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold excluded_middle. intros E X P H x. 
+  destruct E with (P x) as [H'|H'].
+  - apply H'.
+  - exfalso. apply H. exists x. apply H'.
+  Qed.
 (** [] *)
 
 (** **** Exercise: 5 stars, standard, optional (classical_axioms)  
@@ -1757,8 +1807,14 @@ Definition de_morgan_not_and_not := forall P Q:Prop,
 Definition implies_to_or := forall P Q:Prop,
   (P->Q) -> (~P\/Q).
 
-(* FILL IN HERE 
-
-    [] *)
+Theorem excluded_middle_peirce:
+  excluded_middle <-> peirce.
+Proof.
+  unfold excluded_middle, peirce. split.
+  + intros E P Q H. unfold not in H. destruct E with (P:= P) as [H'|H'].
+    - apply H'.
+    - apply H. intros HP. exfalso. apply H'. apply HP.
+  + intros H. intros P. apply H with (Q:= ~(P \/ ~P)). unfold not. intros J.
+    right. intros PP. apply J. left. apply PP. left. apply PP. 
 
 (* Wed Jan 9 12:02:45 EST 2019 *)
