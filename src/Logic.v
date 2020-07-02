@@ -1816,5 +1816,6 @@ Proof.
     - apply H. intros HP. exfalso. apply H'. apply HP.
   + intros H. intros P. apply H with (Q:= ~(P \/ ~P)). unfold not. intros J.
     right. intros PP. apply J. left. apply PP. left. apply PP. 
+Qed.
 
 (* Wed Jan 9 12:02:45 EST 2019 *)

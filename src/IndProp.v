@@ -148,7 +148,10 @@ Qed.
 Theorem ev_double : forall n,
   even (double n).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction n as [| n H ].
+  + simpl. apply ev_0.
+  + simpl. apply ev_SS. apply H.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -292,8 +295,21 @@ Theorem one_not_even' : ~ even 1.
 Theorem SSSSev__even : forall n,
   even (S (S (S (S n)))) -> even n.
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  intros n H. inversion H as [| n' H1 H2 ]. inversion H1. apply H3.
+  Qed.
+
+Theorem SSSSev__even' : forall n,
+  even (S (S (S (S n)))) -> even n.
+Proof.
+  intros n H. apply ev_inversion in H as [H|H].
+  + discriminate H.
+  + destruct H as [n' [H1 H2]]. injection H1 as H1i. 
+    rewrite <- H1i in H2. apply ev_inversion in H2 as [H'|H'].
+    - discriminate H'.
+    - destruct H' as [n'' [H1 H2]]. injection H1 as H1. rewrite H1.
+      apply H2.
+Qed.
+  (** [] *)
 
 (** **** Exercise: 1 star, standard (even5_nonsense)  
 
@@ -302,7 +318,9 @@ Proof.
 Theorem even5_nonsense :
   even 5 -> 2 + 2 = 9.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros H.
+  inversion H. inversion H1. inversion H3.
+Qed.
 (** [] *)
 
 (** The [inversion] tactic does quite a bit of work. When
@@ -452,7 +470,12 @@ Qed.
 (** **** Exercise: 2 stars, standard (ev_sum)  *)
 Theorem ev_sum : forall n m, even n -> even m -> even (n + m).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m H1.
+  generalize dependent m.
+  induction H1 as [| n ].
+  + intros m H2. apply H2.
+  + intros m H2. simpl. apply ev_SS, IHeven, H2.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced, optional (even'_ev)  
@@ -472,7 +495,18 @@ Inductive even' : nat -> Prop :=
 
 Theorem even'_ev : forall n, even' n <-> even n.
 Proof.
- (* FILL IN HERE *) Admitted.
+  intros n. split. 
+  + intros H. induction H as [| | m n H1 H2 H3 H4 ].
+    - apply ev_0.
+    - apply ev_SS, ev_0.
+    - apply ev_sum. apply H2. apply H4.
+  + intros H. induction H as [| n H1 H2 ].
+    - apply even'_0.
+    - replace (S (S n)) with (2 + n). apply even'_sum. apply even'_2.
+      apply H2. reflexivity.
+Qed.
+  
+
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced, recommended (ev_ev__ev)  
@@ -483,7 +517,11 @@ Proof.
 Theorem ev_ev__ev : forall n m,
   even (n+m) -> even n -> even m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m H1 H2.
+  induction H2 as [| n IH1 IH2 ].
+  - simpl in H1. apply H1.
+  - simpl in H1. apply evSS_ev in H1. apply IH2. apply H1.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (ev_plus_plus)  
@@ -492,10 +530,24 @@ Proof.
     induction or even case analysis is needed, though some of the
     rewriting may be tedious. *)
 
+Search double.
+
 Theorem ev_plus_plus : forall n m p,
   even (n+m) -> even (n+p) -> even (m+p).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m p H1 H2. 
+  apply ev_ev__ev with (n:= n + m) (m:= m + p).
+  rewrite <- (plus_assoc n m (m + p)).
+  rewrite (plus_assoc m m p).
+  rewrite plus_assoc.
+  rewrite <- (double_plus m).
+  rewrite plus_comm.
+  rewrite plus_assoc.
+  apply ev_sum. rewrite plus_comm.
+  apply H2.
+  apply ev_double.
+  apply H1.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
