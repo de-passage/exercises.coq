@@ -1311,7 +1311,30 @@ Lemma re_not_empty_correct : forall T (re : @reg_exp T),
   (exists s, s =~ re) <-> re_not_empty re = true.
 Proof.
   split.
-Admitted.
+  - induction re. 
+    + intros [s H]. inversion H.
+    + reflexivity.
+    + reflexivity.
+    + intros [s H]. simpl. apply andb_true_iff. split. 
+      * apply IHre1. inversion H. exists s1. apply H3.
+      * apply IHre2. inversion H. exists s2. apply H4. 
+    + intros [s H]. simpl. apply orb_true_iff. inversion H.
+      * left. apply IHre1. exists s. apply H2.
+      * right. apply IHre2. exists s. apply H1.
+    + intros [s H]. reflexivity.
+  - intros H. induction re. 
+    + simpl in H. discriminate H.
+    + exists []. apply MEmpty.
+    + exists [t]. apply MChar.
+    + simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+      apply IHre1 in H1 as [s1 H1].
+      apply IHre2 in H2 as [s2 H2].
+      exists (s1 ++ s2). apply MApp. apply H1. apply H2.
+    + simpl in H. apply orb_true_iff in H. destruct H as [H | H].
+      * apply IHre1 in H as [s H]. exists s. apply MUnionL. apply H.
+      * apply IHre2 in H as [s H]. exists s. apply MUnionR. apply H.
+    + exists []. apply MStar0.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
