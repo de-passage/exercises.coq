@@ -922,7 +922,15 @@ Theorem subseq_trans : forall (l1 l2 l3 : list nat),
   subseq l2 l3 ->
   subseq l1 l3.
 Proof.
-  Admitted.
+  intros l1 l2 l3 H1 H2.
+  generalize dependent l1.
+  induction H2.
+  + intros l1 H1. inversion H1. apply subseq_nil. 
+  + intros l H1. inversion H1. apply subseq_nil.
+    - apply subseq_in. apply IHsubseq. apply H3.
+    - apply subseq_ni. apply IHsubseq. apply H3.
+  + intros l H1. apply subseq_ni. apply IHsubseq. apply H1.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (R_provability2)  
@@ -1178,7 +1186,12 @@ Lemma MStar' : forall T (ss : list (list T)) (re : reg_exp),
   fold app ss [] =~ Star re.
 Proof.
   intros T ss re H.
-Admitted.
+  induction ss.
+  + apply MStar0.
+  + simpl. apply (MStarApp _ _ re).
+    - apply H. simpl. left. reflexivity.
+    - apply IHss. intros s H'. apply H. simpl. right. apply H'.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (reg_exp_of_list_spec)  
@@ -1189,7 +1202,19 @@ Admitted.
 Lemma reg_exp_of_list_spec : forall T (s1 s2 : list T),
   s1 =~ reg_exp_of_list s2 <-> s1 = s2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros T l s2. split.
+  + generalize dependent l. induction s2 as [| s2 s2r IH ].
+    - intros s1 H. simpl in H. inversion H. reflexivity.
+    - intros s1 H. inversion H. inversion H3. simpl.
+      apply f_equal. apply IH. apply H4.
+  + generalize dependent l. induction s2 as [| s2 s2r IH].
+    - simpl. intros s1 H. rewrite H. apply MEmpty.
+    - intros s1 H. simpl. rewrite H. 
+      replace (s2 :: s2r) with ([s2] ++ s2r). apply MApp.
+      * apply MChar.
+      * apply IH. reflexivity.
+      * reflexivity.
+Qed.  
 (** [] *)
 
 (** Since the definition of [exp_match] has a recursive
@@ -1272,13 +1297,21 @@ Qed.
     regular expression matches some string. Prove that your function
     is correct. *)
 
-Fixpoint re_not_empty {T : Type} (re : @reg_exp T) : bool
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint re_not_empty {T : Type} (re : @reg_exp T) : bool :=
+  match re with
+  | EmptySet => false 
+  | EmptyStr => true
+  | Char x => true
+  | App re1 re2 => re_not_empty re1 && re_not_empty re2
+  | Union re1 re2 => re_not_empty re1 || re_not_empty re2
+  | Star re => true
+ end.
 
 Lemma re_not_empty_correct : forall T (re : @reg_exp T),
   (exists s, s =~ re) <-> re_not_empty re = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split.
+Admitted.
 (** [] *)
 
 (* ================================================================= *)
