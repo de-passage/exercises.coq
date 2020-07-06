@@ -892,17 +892,19 @@ End R.
       is a subsequence of [l3], then [l1] is a subsequence of [l3].
       Hint: choose your induction carefully! *)
 
-Inductive subseq : list nat -> list nat -> Prop :=
+Inductive subseq {X: Type} : list X -> list X -> Prop :=
   | subseq_nil l: subseq [] l
-  | subseq_in l1 l2 (x: nat) (H: subseq l1 l2): subseq (x :: l1) (x :: l2)
-  | subseq_ni l1 l2 (x: nat) (H: subseq l1 l2): subseq l1 (x :: l2)
+  | subseq_in l1 l2 (x: X) (y: X) (Heq: x = y) (H: subseq l1 l2): 
+      subseq (x :: l1) (y :: l2)
+  | subseq_ni l1 l2 (x: X) (H: subseq l1 l2):
+       subseq l1 (x :: l2)
 .
 
 Theorem subseq_refl : forall (l : list nat), subseq l l.
 Proof.
   induction l.
   + apply subseq_nil.
-  + apply subseq_in. apply IHl.
+  + apply subseq_in. reflexivity. apply IHl.
 Qed.
 
 Theorem subseq_app : forall (l1 l2 l3 : list nat),
@@ -913,7 +915,7 @@ Proof.
   + simpl. intros l2 l3 H. apply subseq_nil.
   + intros l2 l3 H. induction H.
     - apply subseq_nil.
-    - simpl. apply subseq_in. apply IHsubseq.
+    - simpl. apply subseq_in. rewrite Heq. reflexivity. apply IHsubseq.
     - simpl. apply subseq_ni. apply IHsubseq.
 Qed. 
 
@@ -926,8 +928,11 @@ Proof.
   generalize dependent l1.
   induction H2.
   + intros l1 H1. inversion H1. apply subseq_nil. 
-  + intros l H1. inversion H1. apply subseq_nil.
-    - apply subseq_in. apply IHsubseq. apply H3.
+  + intros l H1. inversion H1. 
+    - apply subseq_nil.
+    - apply subseq_in.
+      * rewrite <- H0 in H1. rewrite Heq0. apply Heq.
+      * apply IHsubseq. apply H3.
     - apply subseq_ni. apply IHsubseq. apply H3.
   + intros l H1. apply subseq_ni. apply IHsubseq. apply H1.
 Qed.
@@ -1853,6 +1858,11 @@ Definition manual_grade_for_filter_challenge : option (nat*string) := None.
     this: Among all subsequences of [l] with the property that [test]
     evaluates to [true] on all their members, [filter test l] is the
     longest.  Formalize this claim and prove it. *)
+
+Theorem filter_challenge_2: forall X (test: X -> bool) (l: list X),
+  exists ll, subseq ll l /\ All (fun x => test x = true) ll /\ (forall (lll: list X), length lll < length ll) -> filter test l = ll.
+Proof.
+Admitted.
 
 (* FILL IN HERE 
 
