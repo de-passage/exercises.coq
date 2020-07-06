@@ -1818,4 +1818,38 @@ Proof.
     right. intros PP. apply J. left. apply PP. left. apply PP. 
 Qed.
 
+Theorem excluded_middle_double_negation_elimination: 
+  excluded_middle <-> double_negation_elimination.
+Proof.
+  unfold excluded_middle, double_negation_elimination. split.
+  + intros E P. unfold not. intros nP.
+    destruct E with (P := P).
+    - apply H. 
+    - apply nP in H. destruct H.
+  + intros H P. apply H. unfold not. intros H'. apply H'. right. intros HP.
+    apply H'. left. apply HP.
+Qed.
+
+Theorem excluded_middle_de_morgan:
+  de_morgan_not_and_not <-> excluded_middle.
+Proof.
+  unfold de_morgan_not_and_not, excluded_middle. split.
+  + intros DM P. apply DM. intros [HP HnP]. apply HnP in HP. destruct HP.
+  + intros E P Q H. destruct E with (P \/ Q) as [H'|H'].
+    - apply H'.
+    - exfalso. apply H. split. 
+      * intros N. apply H'. left. apply N.
+      * intros N. apply H'. right. apply N.
+Qed.
+
+Theorem excluded_middle_implies_to_or:
+  implies_to_or <-> excluded_middle.
+Proof.
+  unfold implies_to_or, excluded_middle. split.
+  + intros I P. apply or_commut. apply I. intros HP. apply HP.
+  + intros E P Q HPQ. destruct E with P.
+    - right. apply HPQ, H.
+    - left. apply H.
+Qed.
+
 (* Wed Jan 9 12:02:45 EST 2019 *)
