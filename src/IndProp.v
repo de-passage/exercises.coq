@@ -1798,7 +1798,50 @@ Definition manual_grade_for_nostutter : option (nat*string) := None.
     to be a merge of two others.  Do this with an inductive relation,
     not a [Fixpoint].)  *)
 
-(* FILL IN HERE *)
+Inductive merged_list {X: Type} :
+  list X -> list X -> list X -> Prop := 
+| merged0: merged_list [] [] []
+| mergedL x xs y ys z (HEq: x = y) (HM: merged_list xs ys z):
+    merged_list (x::xs) (y::ys) z
+| mergedR x xs y z zs (Heq: x = z) (HM: merged_list xs y zs):
+    merged_list (x::xs) y (z::zs).
+
+Definition merged_list_test_1 : merged_list [1;2;3] [1] [2;3].
+Proof.
+  apply mergedL, mergedR, mergedR, merged0; reflexivity.
+Qed.
+
+Definition merged_list_test_2 : merged_list [1;2;3;4;5] [2;4] [1;3;5].
+Proof.
+  apply mergedR, mergedL, mergedR, mergedL, mergedR, merged0; reflexivity.
+Qed.
+
+Theorem merged_list_spec: forall X (test: X -> bool) (l l1 l2: list X),
+  merged_list l l1 l2 -> 
+  All (fun x => test x = true) l1 -> 
+  All (fun x => negb (test x) = true) l2 ->
+  filter test l = l1.
+Proof.
+  intros X test l.
+  induction l.
+  + intros l1 l2 HM HA1 HA2. inversion HM. reflexivity.
+  + intros l1 l2 HM HA1 HA2. inversion HM as [ 
+    | x' xs y ys z HEq HM' [Hx Hxs] Hys Hz
+    | x' xs y z zs HEq HM' [Hx Hxs] Hy Hz ].
+    - rewrite HEq. simpl. destruct (test y) eqn: D.
+      * apply f_equal. apply IHl with l2. apply HM'. rewrite <- Hys in HA1.
+        simpl in HA1. destruct HA1 as [HA1 HA1']. apply HA1'.
+        apply HA2.
+      * rewrite <- Hys in HA1. simpl in HA1. destruct HA1 as [HC HA1].
+        rewrite HC in D. discriminate D.
+    - simpl. destruct (test x) eqn: D.
+      * rewrite <- Hz in HA2. simpl in HA2. destruct HA2 as [HC HA2].
+        rewrite HEq in D. destruct (test z) eqn: D'. simpl in HC.
+        discriminate HC. discriminate D.
+      * apply IHl with zs. apply HM'. apply HA1. rewrite <- Hz in HA2.
+        simpl in HA2. destruct HA2 as [HN HA2]. apply HA2.
+Qed.
+
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_filter_challenge : option (nat*string) := None.
