@@ -1473,7 +1473,7 @@ Lemma MStar'' : forall T (s : list T) (re : reg_exp),
     s = fold app ss []
     /\ forall s', In s' ss -> s' =~ re.
 Proof.
-  (* FILL IN HERE *) Admitted.
+Admitted.
 (** [] *)
 
 (** **** Exercise: 5 stars, advanced (pumping)  
@@ -1557,7 +1557,11 @@ Proof.
        | re | s1 s2 re Hmatch1 IH1 Hmatch2 IH2 ].
   - (* MEmpty *)
     simpl. omega.
-  (* FILL IN HERE *) Admitted.
+  - (* MChar *)
+    simpl. omega.
+  - (* MChar *)
+    simpl. rewrite app_length. intros Hlen.
+(* FILL IN HERE *) Admitted.
 
 End Pumping.
 (** [] *)
@@ -1632,7 +1636,10 @@ Qed.
 (** **** Exercise: 2 stars, standard, recommended (reflect_iff)  *)
 Theorem reflect_iff : forall P b, reflect P b -> (P <-> b = true).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros P b H. split. 
+  - intros HP. inversion H. reflexivity. contradiction.
+  - intros HB. inversion H. apply H0. rewrite HB in H1. discriminate H1.
+Qed.
 (** [] *)
 
 (** The advantage of [reflect] over the normal "if and only if"
@@ -1683,7 +1690,15 @@ Fixpoint count n l :=
 Theorem eqbP_practice : forall n l,
   count n l = 0 -> ~(In n l).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n l.
+  induction l.
+  + simpl. intros H1 H2. apply H2.
+  + simpl. destruct (eqbP n x). 
+    - simpl. discriminate.
+    - simpl. intros H' [H''|H''].
+      * apply H. rewrite H''. reflexivity.
+      * apply IHl. apply H'. apply H''.
+Qed.
 (** [] *)
 
 (** This small example shows how reflection gives us a small gain in
@@ -1716,7 +1731,9 @@ Proof.
     [nostutter]. *)
 
 Inductive nostutter {X:Type} : list X -> Prop :=
- (* FILL IN HERE *)
+  | nostutter_empty: nostutter []
+  | nostutter_single x: nostutter [x]
+  | nostutter_app x y z (H1: nostutter (y :: z)) (H2: x <> y): nostutter (x :: y :: z)
 .
 (** Make sure each of these tests succeeds, but feel free to change
     the suggested proof (in comments) if the given one doesn't work
@@ -1729,34 +1746,22 @@ Inductive nostutter {X:Type} : list X -> Prop :=
     example with more basic tactics.)  *)
 
 Example test_nostutter_1: nostutter [3;1;4;1;5;6].
-(* FILL IN HERE *) Admitted.
-(* 
   Proof. repeat constructor; apply eqb_neq; auto.
-  Qed.
-*)
+Qed.
 
 Example test_nostutter_2:  nostutter (@nil nat).
-(* FILL IN HERE *) Admitted.
-(* 
-  Proof. repeat constructor; apply eqb_neq; auto.
-  Qed.
-*)
+Proof. repeat constructor; apply eqb_neq; auto.
+Qed.
 
 Example test_nostutter_3:  nostutter [5].
-(* FILL IN HERE *) Admitted.
-(* 
-  Proof. repeat constructor; apply eqb_false; auto. Qed.
-*)
+Proof. repeat constructor; apply eqb_false; auto. Qed.
 
 Example test_nostutter_4:      not (nostutter [3;1;1;4]).
-(* FILL IN HERE *) Admitted.
-(* 
-  Proof. intro.
-  repeat match goal with
-    h: nostutter _ |- _ => inversion h; clear h; subst
-  end.
-  contradiction Hneq0; auto. Qed.
-*)
+Proof. intro.
+repeat match goal with
+  h: nostutter _ |- _ => inversion h; clear h; subst
+end.
+contradiction H6; auto. Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_nostutter : option (nat*string) := None.
