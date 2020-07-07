@@ -2,4 +2,4 @@
 Learning exercises in Coq 
 
 Unsolved:
- + IndProp.v : MStar'', pumping
+ + IndProp.v : MStar'', pumping, filter_challenge_2...

@@ -1859,14 +1859,59 @@ Definition manual_grade_for_filter_challenge : option (nat*string) := None.
     evaluates to [true] on all their members, [filter test l] is the
     longest.  Formalize this claim and prove it. *)
 
-Theorem filter_challenge_2: forall X (test: X -> bool) (l: list X),
-  exists ll, subseq ll l /\ All (fun x => test x = true) ll /\ (forall (lll: list X), length lll < length ll) -> filter test l = ll.
+Theorem eq_list__leb_length_true : forall X (m n: list X),
+ m = n -> length m <=? length n = true. 
 Proof.
+  intros X m n H.
+  rewrite H. 
+  generalize dependent m.
+  induction n as [| n ns IHn ].
+  - reflexivity.
+  - simpl. intros m H'. apply IHn with (ns). reflexivity.
+Qed.
+
+Theorem leb_cons_n_m__leb_n_m : forall X (n m: list X) x,
+  length (x :: n) <=? length m = true -> length n <=? length m = true.
+Proof.
+  intros X n m x H. replace (length (x :: n)) with (S (length n)) in H.
+  assert (A: forall a b, S a <=? b = true -> a <=? b = true). {
+    induction a.
+    - intros b H'. simpl. reflexivity.
+    - intros b H'. destruct b. discriminate. simpl. apply IHa. 
+    simpl in H'. simpl. apply H'.
+  } apply A. apply H. reflexivity.
+Qed.
+
+
+Theorem filter_challenge_2: forall X (test: X -> bool) (l l2: list X),
+    subseq l2 l ->
+    All (fun x => test x = true) l2 ->
+    (forall l3, subseq l3 l -> length l3 <=? length l2 = true) 
+    -> filter test l = l2.
+Proof.
+(*
+  intros X test l.
+  induction l.
+  + intros l2 Hsub Hall Hlen. inversion Hsub. reflexivity.
+  + intros l2 Hsub Hall Hlen. inversion Hsub.
+    * rewrite <- H in Hlen, Hall, Hsub. assert (Hlen': subseq [x] (x::l)). 
+      { apply subseq_in. reflexivity. apply subseq_nil. } 
+      apply Hlen in Hlen'. simpl in Hlen'. discriminate Hlen'.
+    * rewrite Heq. simpl. destruct (test x).
+      - apply f_equal. { apply IHl.
+        + apply H1.
+        + rewrite <- H0 in Hall. simpl in Hall. 
+          destruct Hall as [H0t Hall]. apply Hall.
+        + intros l3 Hsub'. apply eq_list__leb_length_true in H0.
+          apply leb_cons_n_m__leb_n_m in H0.
+          apply leb_true_trans with (length l2).
+          admit.
+      }
+      - admit.
+    * admit.
+*) 
 Admitted.
 
-(* FILL IN HERE 
-
-    [] *)
 
 (** **** Exercise: 4 stars, standard, optional (palindromes)  
 
@@ -1891,7 +1936,21 @@ Admitted.
        forall l, pal l -> l = rev l.
 *)
 
-(* FILL IN HERE *)
+Inductive pal {X:Type}: list X -> Prop :=
+| pal_nil : pal []
+| pal_unit x : pal [x]
+| pal_cons x xs (H: pal xs): pal (x::xs)
+.
+
+Theorem pal_app_rev : forall X (l: list X),
+  pal (l ++ rev l).
+Proof.
+Admitted.
+
+Theorem pal_rev: forall X (l: list X),
+  pal l -> l = rev l.
+Proof.
+Admitted.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_pal_pal_app_rev_pal_rev : option (nat*string) := None.
@@ -1906,9 +1965,11 @@ Definition manual_grade_for_pal_pal_app_rev_pal_rev : option (nat*string) := Non
      forall l, l = rev l -> pal l.
 *)
 
-(* FILL IN HERE 
+Theorem pa_conversion: forall X (l: list X),
+  l = rev l -> pal l.
+Proof.
+Admitted.
 
-    [] *)
 
 (** **** Exercise: 4 stars, advanced, optional (NoDup)  
 
