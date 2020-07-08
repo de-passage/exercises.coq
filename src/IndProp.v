@@ -645,7 +645,8 @@ Inductive total_relation : nat -> nat -> Prop :=
     that never holds. *)
 
 Inductive empty_relation : nat -> nat -> Prop := 
-| empty_relation_impossible n m (H: empty_relation n m) : empty_relation n m.
+| empty_relation_impossible n (H: n <> n) : empty_relation n n.
+
 (** From the definition of [le], we can sketch the behaviors of
     [destruct], [inversion], and [induction] on a hypothesis [H]
     providing evidence of the form [le e1 e2].  Doing [destruct H]
