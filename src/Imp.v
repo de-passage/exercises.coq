@@ -1859,29 +1859,51 @@ Inductive sinstr : Type :=
     immaterial what we do, since our compiler will never emit such a
     malformed program. *)
 
+Definition stack_exec (stack: list nat) (f: nat -> nat -> nat) :=
+match stack with
+| s1 :: s2 :: srest => (f s2 s1) :: srest
+| _ => stack
+end.
+
 Fixpoint s_execute (st : state) (stack : list nat)
                    (prog : list sinstr)
-                 : list nat
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+                 : list nat :=
+  match prog with
+  | [] => stack
+  | x :: xs => match x with
+    | SPush n => s_execute st (n :: stack) xs
+    | SLoad s => let v := st s in s_execute st (v :: stack) xs
+    | SPlus => s_execute st (stack_exec stack plus) xs
+    | SMinus => s_execute st (stack_exec stack minus) xs
+    | SMult => s_execute st (stack_exec stack mult) xs
+    end
+  end.
+
 
 Example s_execute1 :
      s_execute empty_st []
        [SPush 5; SPush 3; SPush 1; SMinus]
    = [2; 5].
-(* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 Example s_execute2 :
      s_execute (X !-> 3) [3;4]
        [SPush 4; SLoad X; SMult; SPlus]
    = [15; 4].
-(* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 (** Next, write a function that compiles an [aexp] into a stack
     machine program. The effect of running the program should be the
     same as pushing the value of the expression on the stack. *)
 
-Fixpoint s_compile (e : aexp) : list sinstr
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint s_compile (e : aexp) : list sinstr :=
+    match e with
+    | ANum n => [SPush n]
+    | AId s => [SLoad s]
+    | APlus a1 a2 => s_compile a1 ++ s_compile a2 ++ [SPlus]
+    | AMinus a1 a2 => s_compile a1 ++ s_compile a2 ++ [SMinus]
+    | AMult a1 a2 => s_compile a1 ++ s_compile a2 ++ [SMult]
+    end.
 
 (** After you've defined [s_compile], prove the following to test
     that it works. *)
@@ -1889,7 +1911,7 @@ Fixpoint s_compile (e : aexp) : list sinstr
 Example s_compile1 :
   s_compile (X - (2 * Y))%imp
   = [SLoad X; SPush 2; SLoad Y; SMult; SMinus].
-(* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed. 
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced (stack_compiler_correct)  
@@ -1908,7 +1930,7 @@ Example s_compile1 :
 Theorem s_compile_correct : forall (st : state) (e : aexp),
   s_execute st [] (s_compile e) = [ aeval st e ].
 Proof.
-  (* FILL IN HERE *) Admitted.
+Admitted.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (short_circuit)  
