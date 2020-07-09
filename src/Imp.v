@@ -1539,7 +1539,12 @@ Example ceval_example2:
     X ::= 0;; Y ::= 1;; Z ::= 2
   ]=> (Z !-> 2 ; Y !-> 1 ; X !-> 0).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply E_Seq with (X !-> 0).
+  apply E_Ass. reflexivity.
+  apply E_Seq with (Y !-> 1; X !-> 0).
+  apply E_Ass. reflexivity.
+  apply E_Ass. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (pup_to_n)  
@@ -1549,15 +1554,50 @@ Proof.
    Prove that this program executes as intended for [X] = [2]
    (this is trickier than you might expect). *)
 
-Definition pup_to_n : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition pup_to_n : com :=
+  WHILE ~(X = 0) DO
+    Y ::= Y + X ;;
+    X ::= X - 1
+  END.
+
+Theorem add_env_2 : forall n1 n2,
+  (Y !-> n1; X !-> n2) =[ Y ::= Y + X ]=> (Y !-> n1 + n2; X !-> n2).
+Proof.
+  intros n1 n2.
+  replace (Y !-> n1 + n2; X !-> n2) with (Y !-> n1 + n2; Y !-> n1; X !-> n2).
+  apply E_Ass. reflexivity.
+  rewrite t_update_shadow. reflexivity.
+Qed.
 
 Theorem pup_to_2_ceval :
   (X !-> 2) =[
     pup_to_n
   ]=> (X !-> 0 ; Y !-> 3 ; X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold pup_to_n.
+  apply E_WhileTrue with (X !-> 1; Y !-> 2; Y !-> 0; X !-> 2).
+  - reflexivity.
+  - apply E_Seq with (Y !-> 2; X !-> 2).
+    apply E_Ass. reflexivity.
+    rewrite t_update_shadow.
+    apply E_Ass.
+    reflexivity.
+  - apply E_WhileTrue with 
+    (X !-> 0 ; Y !-> 3 ; X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2).
+    + reflexivity.
+    + apply E_Seq with (Y !-> 3; X !-> 1).
+      rewrite t_update_shadow.
+      rewrite t_update_permute; try discriminate.
+      rewrite t_update_shadow.
+      apply add_env_2.
+      rewrite t_update_shadow.
+      replace (Y !-> 2; X !-> 2) with (X !-> 2; Y !-> 2); try apply t_update_permute; try discriminate.
+      rewrite t_update_shadow.
+      replace (X !-> 1; Y !-> 2) with (Y !-> 2; X !-> 1); try apply t_update_permute; try discriminate.
+      rewrite t_update_shadow. apply E_Ass.
+      reflexivity.
+    + apply E_WhileFalse. reflexivity.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
