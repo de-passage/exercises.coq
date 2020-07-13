@@ -1927,10 +1927,54 @@ Proof. reflexivity. Qed.
     more general lemma to get a usable induction hypothesis; the main
     theorem will then be a simple corollary of this lemma. *)
 
+Theorem s_compile_app: forall i1 i2 st l,
+  s_execute st l (i1 ++ i2) = s_execute st (s_execute st l i1) i2.
+Proof.
+  induction i1.
+  + reflexivity.
+  + intros i2 st l. destruct a eqn: D.
+    - simpl. apply IHi1 with (l := n :: l).
+    - simpl. apply IHi1 with (l := st x :: l).
+    - simpl. apply IHi1 with (l:= stack_exec l add).
+    - simpl. apply IHi1 with (l:= stack_exec l minus).
+    - simpl. apply IHi1 with (l:= stack_exec l mult).
+Qed.
+
+Inductive binopR : (nat -> nat -> nat) -> sinstr -> Prop :=
+| binop_add : binopR add SPlus
+| binop_minus : binopR minus SMinus
+| binop_mult : binopR mult SMult.
+
+Theorem s_compile_binop: forall e1 e2 st op f, 
+  binopR f op -> 
+  (forall l1, s_execute st l1 (s_compile e1) = aeval st e1 :: l1) -> 
+  (forall l2, s_execute st l2 (s_compile e2) = aeval st e2 :: l2) ->
+  forall l3, 
+    s_execute st l3 (s_compile e1 ++ s_compile e2 ++ [op]) =
+      f (aeval st e1) (aeval st e2) :: l3.
+Proof.
+  intros e1 e2 st instr f op H1 H2 l3.
+  rewrite ?s_compile_app, H1, H2. inversion op; reflexivity.
+Qed.
+
+Theorem s_compile_correct' : forall st e l,
+  s_execute st l (s_compile e) = aeval st e :: l.
+Proof.
+  intros st e.
+  induction e; 
+       reflexivity 
+    || (simpl; apply s_compile_binop; 
+         constructor 
+      || apply IHe1 
+      || apply IHe2).
+Qed.
+
 Theorem s_compile_correct : forall (st : state) (e : aexp),
   s_execute st [] (s_compile e) = [ aeval st e ].
 Proof.
-Admitted.
+  intros st e.
+  apply s_compile_correct'.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (short_circuit)  
