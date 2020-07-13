@@ -405,7 +405,36 @@ Theorem ceval__ceval_step: forall c st st',
 Proof.
   intros c st st' Hce.
   induction Hce.
-  (* FILL IN HERE *) Admitted.
+  + exists 1. reflexivity.
+  + exists 1. simpl. subst. reflexivity.
+  + destruct IHHce1 as [i1 IH1], IHHce2 as [i2 IH2].
+    assert (exists j, j = i1 + i2) as [j HJ]. 
+    exists (i1 + i2). reflexivity.
+    exists (S j). destruct i1, i2; 
+    try discriminate IH1; try discriminate IH2.
+    simpl. assert (j <= S i1 + S i2) as Hj'.
+    omega. apply (ceval_step_more _ _ st st' c1) in Hj'.
+    rewrite HJ, Hj'. apply (ceval_step_more (S i2)). omega.
+    apply IH2. apply (ceval_step_more (S i1)). omega. apply IH1.
+  + destruct IHHce as [i IH]. exists (S i). destruct i. 
+    discriminate IH. 
+    assert (exists j, j = S i) as [j HJ]. exists (S i). reflexivity.
+    rewrite <- HJ. simpl. rewrite H. apply (ceval_step_more (S i)).
+    omega. apply IH.
+  + destruct IHHce as [i IH]. exists (S i). destruct i. 
+    discriminate IH. assert (exists j, j = S i) as [j HJ]. 
+    exists (S i). reflexivity. rewrite <- HJ. simpl. rewrite H.
+    apply (ceval_step_more (S i)). omega. apply IH.
+  + exists 1. simpl. rewrite H. reflexivity.
+  + destruct IHHce1 as [ i1 IH1 ], IHHce2 as [ i2 IH2 ].
+    assert (exists j, j = i1 + i2) as [j HJ]. 
+    exists (i1 + i2). reflexivity. exists (S j). simpl. rewrite H.
+    assert (i1 <= j) as Hij. omega. 
+    apply (ceval_step_more _ _ st st' c) in Hij. rewrite Hij.
+    apply (ceval_step_more i2 j). omega. apply IH2. apply IH1.
+Qed.
+
+
 (** [] *)
 
 Theorem ceval_and_ceval_step_coincide: forall c st st',
