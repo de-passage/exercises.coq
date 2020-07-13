@@ -1994,9 +1994,25 @@ Qed.
     would _not_ be equivalent to the original, since it would make more
     programs terminate.) *)
 
-(* FILL IN HERE 
+Fixpoint beval' (st : state) (b : bexp) : bool :=
+  match b with
+  | BTrue       => true
+  | BFalse      => false
+  | BEq a1 a2   => (aeval st a1) =? (aeval st a2)
+  | BLe a1 a2   => (aeval st a1) <=? (aeval st a2)
+  | BNot b1     => negb (beval' st b1)
+  | BAnd b1 b2  => if (beval' st b1) then (beval' st b2) else false
+  end.
 
-    [] *)
+Theorem beval_eq_beval': forall st b, 
+  beval st b = beval' st b.
+Proof.
+  intros st b.
+  induction b; try reflexivity.
+Qed.
+
+
+(* [] *)
 
 Module BreakImp.
 (** **** Exercise: 4 stars, advanced (break_imp)  
@@ -2113,7 +2129,38 @@ Reserved Notation "st '=[' c ']=>' st' '/' s"
 Inductive ceval : com -> state -> result -> state -> Prop :=
   | E_Skip : forall st,
       st =[ CSkip ]=> st / SContinue
-  (* FILL IN HERE *)
+  | E_Break : forall st,
+      st =[ CBreak ]=> st / SBreak
+  | E_Ass : forall st x a n,
+      aeval st a = n -> 
+      st =[ x ::= a ]=> (x !-> n; st) / SContinue
+  | E_Seq_Break : forall st st' e1 e2,
+      st =[ e1 ]=> st' / SBreak ->
+      st =[ e1 ;; e2 ]=> st' / SBreak
+  | E_Seq_Continue : forall st st' st'' e1 e2 s,
+      st =[ e1 ]=> st' / SContinue ->
+      st' =[ e2 ]=> st'' / s ->
+      st =[ e1 ;; e2 ]=> st'' / s
+  | E_IfTrue : forall st st' b s e1 e2,
+      beval st b = true ->
+      st =[ e1 ]=> st' / s ->
+      st =[ TEST b THEN e1 ELSE e2 FI ]=> st' / s
+  | E_IfFalse : forall st st' b s e1 e2,
+      beval st b = false ->
+      st =[ e2 ]=> st' / s ->
+      st =[ TEST b THEN e1 ELSE e2 FI ]=> st' / s
+  | E_WhileFalse : forall st b e,
+      beval st b = false ->
+      st =[ WHILE b DO e END ]=> st / SContinue
+  | E_WhileTrue_Continue : forall st st' st'' b e,
+      beval st b = true -> 
+      st =[ e ]=> st' / SContinue ->
+      st' =[ WHILE b DO e END ]=> st'' / SContinue ->
+      st =[ WHILE b DO e END ]=> st'' / SContinue
+  | E_WhileTrue_Break : forall st st' b e,
+      beval st b = true ->
+      st =[ e ]=> st' / SBreak ->
+      st =[WHILE b DO e END ]=> st' / SContinue
 
   where "st '=[' c ']=>' st' '/' s" := (ceval c st s st').
 
@@ -2123,29 +2170,44 @@ Theorem break_ignore : forall c st st' s,
      st =[ BREAK;; c ]=> st' / s ->
      st = st'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros c st st' s H.
+  inversion H; subst.
+  + inversion H5. reflexivity.
+  + inversion H2.
+Qed.
 
 Theorem while_continue : forall b c st st' s,
   st =[ WHILE b DO c END ]=> st' / s ->
   s = SContinue.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b c st st' s H. inversion H; reflexivity.
+Qed.
 
 Theorem while_stops_on_break : forall b c st st',
   beval st b = true ->
   st =[ c ]=> st' / SBreak ->
   st =[ WHILE b DO c END ]=> st' / SContinue.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b c st st'.
+  apply E_WhileTrue_Break.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced, optional (while_break_true)  *)
+
 Theorem while_break_true : forall b c st st',
   st =[ WHILE b DO c END ]=> st' / SContinue ->
   beval st' b = true ->
   exists st'', st'' =[ c ]=> st' / SBreak.
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros b c st st' H1 H2.
+  remember (WHILE b DO c END) as B eqn: E.
+  induction H1; discriminate || inversion E; subst.
+  + rewrite H2 in H. discriminate H.
+  + apply IHceval2. apply E. apply H2. 
+  + exists st. assumption.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced, optional (ceval_deterministic)  *)
