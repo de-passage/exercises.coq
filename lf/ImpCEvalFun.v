@@ -194,14 +194,14 @@ Definition test_ceval (st:state) (c:com) :=
   | Some st => Some (st X, st Y, st Z)
   end.
 
-(* Compute
+Compute
      (test_ceval empty_st
          (X ::= 2;;
           TEST (X <= 1)
             THEN Y ::= 3
             ELSE Z ::= 4
           FI)).
-   ====>
+(*   ====>
       Some (2, 0, 4)   *)
 
 (** **** Exercise: 2 stars, standard, recommended (pup_to_n)  
@@ -210,17 +210,18 @@ Definition test_ceval (st:state) (c:com) :=
    [X] (inclusive: [1 + 2 + ... + X]) in the variable [Y].  Make sure
    your solution satisfies the test that follows. *)
 
-Definition pup_to_n : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition pup_to_n : com :=
+  WHILE ~(X = 0) DO
+    Y ::= Y + X ;;
+    X ::= X - 1
+  END.
 
-(* 
+
 
 Example pup_to_n_1 :
   test_ceval (X !-> 5) pup_to_n
   = Some (0, 15, 0).
 Proof. reflexivity. Qed.
-
-    [] *)
 
 (** **** Exercise: 2 stars, standard, optional (peven)  
 
@@ -228,9 +229,40 @@ Proof. reflexivity. Qed.
     sets [Z] to [1] otherwise.  Use [test_ceval] to test your
     program. *)
 
-(* FILL IN HERE 
+Definition peven : com :=
+  WHILE ~(X <= Y) DO
+    Y ::= Y + 2
+  END ;;
+  TEST Y = X THEN
+    Z ::= 0
+  ELSE 
+    Z ::= 1
+  FI.
 
-    [] *)
+Example peven_0 : 
+  test_ceval (X !-> 0) peven = Some (0, 0, 0).
+Proof. reflexivity. Qed.
+
+Example peven_1 :
+  test_ceval (X !-> 1) peven = Some (1, 2, 1).
+Proof. reflexivity. Qed.
+
+Example peven_2 :
+  test_ceval (X !-> 2) peven = Some (2, 2, 0).
+Proof. reflexivity. Qed.
+
+Example peven_3 :
+  test_ceval (X !-> 3) peven = Some (3, 4, 1).
+Proof. reflexivity. Qed.
+
+Example peven_4 :
+  test_ceval (X !-> 4) peven = Some (4, 4, 0).
+Proof. reflexivity. Qed.
+
+Example peven_5 :
+  test_ceval (X !-> 5) peven = Some (5, 6, 1).
+Proof. reflexivity. Qed.
+
 
 (* ################################################################# *)
 (** * Relational vs. Step-Indexed Evaluation *)
@@ -302,7 +334,17 @@ Proof.
     the main ideas to a human reader; do not simply transcribe the
     steps of the formal proof. *)
 
-(* FILL IN HERE *)
+(* 
+  Since we're given as an hypothesis that there's a nat i for which
+  ceval_step ... terminates with a result st', we can reason by 
+  induction over this i.
+  - i cannot be 0, since by definition ceval_step would return None
+  - if i /= 0, then we proceed by case analysis of the program c.
+    + Skip and Assignment only need 1 step by definition, and then
+      give the same result as ceval
+    + Sequence c1 ;; c2...
+
+*)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_ceval_step__ceval_inf : option (nat*string) := None.
