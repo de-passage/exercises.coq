@@ -133,7 +133,7 @@ Proof.
     inversion H5; subst. 
     assumption.
   - apply E_Seq with st'. apply H. apply E_Skip.
-Qed
+Qed.
 (** [] *)
 
 (** Similarly, here is a simple transformation that optimizes [TEST]
@@ -221,7 +221,15 @@ Theorem TEST_false : forall b c1 c2,
     (TEST b THEN c1 ELSE c2 FI)
     c2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b c1 c2 H.
+  split; intros H'.
+  + inversion H'; subst. 
+    - unfold bequiv in H. simpl in H. rewrite H in H5. inversion H5.
+    - assumption.
+  + apply E_IfFalse.
+    - unfold bequiv in H. simpl in H. apply H.
+    - assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (swap_if_branches)  
@@ -229,12 +237,23 @@ Proof.
     Show that we can swap the branches of an IF if we also negate its
     guard. *)
 
+Ltac cond_branch C H1 H2:= 
+  apply C; simpl; (rewrite H1; reflexivity) || apply H2.
+
 Theorem swap_if_branches : forall b e1 e2,
   cequiv
     (TEST b THEN e1 ELSE e2 FI)
     (TEST BNot b THEN e2 ELSE e1 FI).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b e1 e2.
+  split; intros H; inversion H; subst.
+  - cond_branch E_IfFalse H5 H6.
+  - cond_branch E_IfTrue H5 H6.
+  - simpl in H5. apply negb_true_iff in H5.
+    cond_branch E_IfFalse H5 H6.
+  - simpl in H5. apply negb_false_iff in H5.
+    cond_branch E_IfTrue H5 H6.
+Qed.
 (** [] *)
 
 (** For [WHILE] loops, we can give a similar pair of theorems.  A loop
@@ -322,7 +341,9 @@ Proof.
 
     Explain what the lemma [WHILE_true_nonterm] means in English.
 
-(* FILL IN HERE *)
+    If the condition b of a while loop always returns true, 
+    independently of the state of the program, then the loop never
+    terminates.
 
     [] *)
 
@@ -337,7 +358,12 @@ Theorem WHILE_true : forall b c,
     (WHILE b DO c END)
     (WHILE true DO SKIP END).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b c Hb.
+  split; intros H.
+  - apply WHILE_true_nonterm in H. contradiction. apply Hb.
+  - inversion H; subst. inversion H4. apply WHILE_true_nonterm in H6. 
+    contradiction. unfold bequiv. reflexivity.
+Qed.
 (** [] *)
 
 (** A more interesting fact about [WHILE] commands is that any number
@@ -372,7 +398,12 @@ Proof.
 Theorem seq_assoc : forall c1 c2 c3,
   cequiv ((c1;;c2);;c3) (c1;;(c2;;c3)).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros c1 c2 c3. split; intros H.
+  - inversion H; subst. inversion H2; subst.
+    repeat (eapply E_Seq; eauto).
+  - inversion H; subst. inversion H5; subst.
+    eapply E_Seq; try eapply E_Seq; try eauto.
+Qed.
 (** [] *)
 
 (** Proving program properties involving assignments is one place
@@ -402,7 +433,20 @@ Theorem assign_aequiv : forall (x : string) e,
   aequiv x e ->
   cequiv SKIP (x ::= e).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros x e Ha.
+  split; intros H.
+  - inversion H; subst. 
+    unfold aequiv in Ha. simpl in Ha. pose proof (Ha st') as Hst.
+    assert (Hx: st' =[ x ::= e ]=> (x !-> aeval st' e; st')).
+    { apply E_Ass. reflexivity. }
+    rewrite <- Hst in Hx.
+    rewrite t_update_same in Hx. 
+    assumption.
+  - inversion H; subst. 
+    unfold aequiv in Ha. pose proof (Ha st) as Hst.
+    simpl in Hst. rewrite <- Hst. rewrite t_update_same.
+    apply E_Skip.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard (equiv_classes)  *)
@@ -467,7 +511,15 @@ Definition prog_i : com :=
   END)%imp.
 
 Definition equiv_classes : list (list com)
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+  := [(* Infinite loops *)
+      [prog_a; prog_d; prog_f; prog_g];
+      (* Sets Y to 0 *)
+      [prog_b; prog_e];
+      (* SKIP *)
+      [prog_c; prog_h];
+      (* Infinite loop if X != Y, SKIP otherwise *)
+      [prog_i]
+     ].
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_equiv_classes : option (nat*string) := None.
@@ -667,7 +719,12 @@ Theorem CSeq_congruence : forall c1 c1' c2 c2',
   cequiv c1 c1' -> cequiv c2 c2' ->
   cequiv (c1;;c2) (c1';;c2').
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros c1 c1' c2 c2' H1 H2.
+  split; intros H;
+  inversion H; subst; unfold cequiv in H1, H2; 
+  eapply E_Seq; (apply H1 || apply H2); eassumption.
+Qed.
+  
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (CIf_congruence)  *)
@@ -676,7 +733,14 @@ Theorem CIf_congruence : forall b b' c1 c1' c2 c2',
   cequiv (TEST b THEN c1 ELSE c2 FI)
          (TEST b' THEN c1' ELSE c2' FI).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b b' c1 c1' c2 c2' Hb Hc1 Hc2.
+  unfold cequiv in Hc1, Hc2. unfold bequiv in Hb.
+  split; intros H; inversion H; subst.
+  - rewrite Hb in H5. apply Hc1 in H6. apply E_IfTrue; assumption.
+  - rewrite Hb in H5. apply Hc2 in H6. apply E_IfFalse; assumption.
+  - rewrite <- Hb in H5. apply Hc1 in H6. apply E_IfTrue; assumption.
+  - rewrite <- Hb in H5. apply Hc2 in H6. apply E_IfFalse; assumption.
+Qed.
 (** [] *)
 
 (** For example, here are two equivalent programs and a proof of their
