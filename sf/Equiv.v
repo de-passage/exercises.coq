@@ -1371,14 +1371,48 @@ Lemma aeval_weakening : forall x st a ni,
   var_not_used_in_aexp x a ->
   aeval (x !-> ni ; st) a = aeval st a.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros x st a ni H.
+  induction H; try (simpl; auto).
+  + apply t_update_neq. assumption.
+Qed.
 
 (** Using [var_not_used_in_aexp], formalize and prove a correct version
     of [subst_equiv_property]. *)
 
-(* FILL IN HERE 
+Theorem var_not_used_in_aexp__subst_equiv_property: forall x1 x2 a1 a2,
+  var_not_used_in_aexp x1 a1 ->
+  cequiv (x1 ::= a1;; x2 ::= a2)
+         (x1 ::= a1;; x2 ::= subst_aexp x1 a1 a2).
+Proof.
+  intros x1 x2 a1 a2 Hv.
+  split.
+  -
+    generalize dependent x2.
+    generalize dependent x1.
+    generalize dependent a1.
+    generalize dependent st'.
+    generalize dependent st.
+    induction a2; intros st st' a1 x1 Hx1 x2 H;
+    inversion H; inversion H5; inversion H2; subst; 
+    eapply E_Seq; try eassumption.
+    + simpl. destruct (eqb_string x1 x) eqn: D.
+      * apply eqb_string_true_iff in D; subst. apply E_Ass.
+        rewrite t_update_eq. rewrite aeval_weakening; auto.
+      * apply eqb_string_false_iff in D. 
+        apply E_Ass. simpl.
+        rewrite t_update_neq. reflexivity. assumption.
+    + remember (x1 !-> aeval st a1; st) as st1. simpl.
+      apply E_Ass. simpl. admit.
+    + admit.
+    + admit.
+  - intros H. inversion H; subst; inversion H2; subst; inversion H5;
+    subst. eapply E_Seq. apply H2.
+    induction a2.
+    + apply H5.
+    + simpl. 
+      
 
-    [] *)
+(* [] *) 
 
 (** **** Exercise: 3 stars, standard (inequiv_exercise)  
 
