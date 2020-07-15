@@ -982,7 +982,8 @@ Proof.
        (and similarly for AMinus/minus and AMult/mult) *)
     try (destruct (fold_constants_aexp a1);
          destruct (fold_constants_aexp a2);
-         rewrite IHa1; rewrite IHa2; reflexivity). Qed.
+         rewrite IHa1; rewrite IHa2; reflexivity).
+Qed. 
 
 (** **** Exercise: 3 stars, standard, optional (fold_bexp_Eq_informal)  
 
@@ -1106,7 +1107,15 @@ Proof.
        become constants after folding *)
       simpl. destruct (n =? n0); reflexivity.
   - (* BLe *)
-    (* FILL IN HERE *) admit.
+    simpl. remember (fold_constants_aexp a1) as Ha1 eqn: Heq1.
+    remember (fold_constants_aexp a2) as Ha2 eqn: Heq2.
+    replace (aeval st a1) with (aeval st Ha1).
+    replace (aeval st a2) with (aeval st Ha2).
+    destruct Ha1, Ha2; try reflexivity.
+    + simpl. destruct (n <=? n0); reflexivity.
+    + subst. rewrite <- fold_constants_aexp_sound. reflexivity.
+    + subst. rewrite <- fold_constants_aexp_sound. reflexivity.
+
   - (* BNot *)
     simpl. remember (fold_constants_bexp b) as b' eqn:Heqb'.
     rewrite IHb.
@@ -1117,7 +1126,7 @@ Proof.
     remember (fold_constants_bexp b2) as b2' eqn:Heqb2'.
     rewrite IHb1. rewrite IHb2.
     destruct b1'; destruct b2'; reflexivity.
-(* FILL IN HERE *) Admitted.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (fold_constants_com_sound)  
@@ -1148,7 +1157,13 @@ Proof.
       apply trans_cequiv with c2; try assumption.
       apply TEST_false; assumption.
   - (* WHILE *)
-    (* FILL IN HERE *) Admitted.
+    assert (bequiv b (fold_constants_bexp b)). { apply 
+      fold_constants_bexp_sound. }
+    destruct (fold_constants_bexp b) eqn: D; try (apply CWhile_congruence; assumption).
+    + apply WHILE_true. assumption.
+    + apply WHILE_false. assumption.
+Qed.
+
 (** [] *)
 
 (* ----------------------------------------------------------------- *)
