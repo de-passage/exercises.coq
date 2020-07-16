@@ -1639,7 +1639,18 @@ Proof.
         pose proof (lt_trans _ _ _ C Hlen). rewrite app_length in H. 
         assert (forall a, (a < a) -> False). unfold lt. intros a. omega.
         apply H0 in H. inversion H.
-  - 
+  - simpl. intros H. 
+    assert (forall a b c, a + b <= c -> a <= c ). intros a b c. omega.
+    apply H0, IH in H as [s'1 [s'2 [s'3 [H'1 [H'2 H'3]]]]].
+    exists s'1, s'2, s'3. split; try split; try assumption. 
+    intros m. apply MUnionL. apply H'3.
+  - simpl. intros H. assert (forall a b c, a + b <= c -> b <= c).
+    intros a b c. omega.
+    apply H0, IH in H as [s'1 [s'2 [s'3 [H'1 [H'2 H'3]]]]].
+    exists s'1, s'2, s'3. split; try split; try assumption. intros m.
+    apply MUnionR. apply H'3.
+  - simpl. intros H. inversion H.
+  - simpl. intros H.
         
 End Pumping.
 (** [] *)
