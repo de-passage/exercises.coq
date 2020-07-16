@@ -1547,6 +1547,44 @@ Qed.
     a (constructive!) way to generate strings matching [re] that are
     as long as we like. *)
 
+Lemma le_n_m_0__0: forall n m,
+  n + m <= 0 -> n = 0 /\ m = 0.
+Proof.
+  induction n, m; intros H; split; reflexivity || inversion H.
+Qed.
+
+Lemma n_le_m_plus_n: forall n m,
+  n <= m + n.
+Proof.
+  induction m; reflexivity || simpl; constructor; assumption.
+Qed.
+
+Lemma n_le_n_plus_m: forall n m,
+  n <= n + m.
+Proof.
+  induction m.
+  + rewrite <- plus_n_O. reflexivity.
+  + rewrite <- plus_n_Sm. constructor. assumption.
+Qed.
+
+Lemma Sn_le_m__n_le_m: forall n m,
+  S n <= m -> n <= m.
+Proof. 
+intros n m H. apply le_trans with (S n).
++ repeat constructor.
++ assumption.
+Qed.
+
+Lemma le_plus_le_eq_le: forall n m n' m',
+  n < m -> n' < m' -> n + n' < m + m'.
+Proof.
+  intros n m n' m' H1.
+  induction H1; intros H2.
+  + induction n. simpl. apply lt_S. assumption.
+    simpl. apply n_le_m__Sn_le_Sm. apply IHn.
+  + simpl. apply le_S. apply IHle. apply H2.
+Qed.
+
 Lemma pumping : forall T (re : @reg_exp T) s,
   s =~ re ->
   pumping_constant re <= length s ->
@@ -1575,10 +1613,34 @@ Proof.
     simpl. omega.
   - (* MChar *)
     simpl. omega.
-  - (* MChar *)
-    simpl. rewrite app_length. intros Hlen.
-(* FILL IN HERE *) Admitted.
-
+  - (* MApp *)
+    intros Hlen. simpl in Hlen.
+    assert (Datatypes.true = Datatypes.true) as Tr by reflexivity.
+    rewrite <- leb_iff in IH1, IH2.
+    destruct (pumping_constant re1 <=? length s1) eqn:D1;
+    try pose proof (IH1 Tr) as  [s11 [s12 [s13[ H11[ H12 H13]]]]].
+    + exists s11, s12, (s13 ++ s2).
+      split. rewrite H11. rewrite <- ?app_assoc. reflexivity.
+      split. assumption. intros m. rewrite app_assoc, app_assoc.
+      apply MApp. rewrite <- app_assoc. apply H13. apply Hmatch2.
+    + destruct (pumping_constant re2 <=? length s2) eqn: D2;
+      try pose proof (IH2 Tr) as  [s21 [s22 [s23[ H21[ H22 H23]]]]].
+      * exists (s1 ++ s21), s22, s23. split.
+        rewrite <- app_assoc. rewrite H21. reflexivity. split.
+        apply H22. intros m. rewrite <- app_assoc. apply MApp. apply Hmatch1.
+        apply H23.
+      * apply Nat.leb_gt in D1. apply Nat.leb_gt in D2. 
+        pose proof (le_plus_le_eq_le _ _ _ _ D1 D2) as C.
+        assert (forall a b c, a < b -> b <= c -> a < c) as lt_trans. {
+          intros a b c H1. generalize dependent c. induction H1.
+          intros c H2. induction c. inversion H2. unfold lt. apply H2.
+          intros c H2. apply IHle. apply Sn_le_m__n_le_m in H2. apply H2.
+        } 
+        pose proof (lt_trans _ _ _ C Hlen). rewrite app_length in H. 
+        assert (forall a, (a < a) -> False). unfold lt. intros a. omega.
+        apply H0 in H. inversion H.
+  - 
+        
 End Pumping.
 (** [] *)
 
