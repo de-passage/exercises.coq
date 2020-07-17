@@ -1949,60 +1949,41 @@ Definition manual_grade_for_filter_challenge : option (nat*string) := None.
     this: Among all subsequences of [l] with the property that [test]
     evaluates to [true] on all their members, [filter test l] is the
     longest.  Formalize this claim and prove it. *)
-
-Theorem eq_list__leb_length_true : forall X (m n: list X),
- m = n -> length m <=? length n = true. 
-Proof.
-  intros X m n H.
-  rewrite H. 
-  generalize dependent m.
-  induction n as [| n ns IHn ].
-  - reflexivity.
-  - simpl. intros m H'. apply IHn with (ns). reflexivity.
-Qed.
-
-Theorem leb_cons_n_m__leb_n_m : forall X (n m: list X) x,
-  length (x :: n) <=? length m = true -> length n <=? length m = true.
-Proof.
-  intros X n m x H. replace (length (x :: n)) with (S (length n)) in H.
-  assert (A: forall a b, S a <=? b = true -> a <=? b = true). {
-    induction a.
-    - intros b H'. simpl. reflexivity.
-    - intros b H'. destruct b. discriminate. simpl. apply IHa. 
-    simpl in H'. simpl. apply H'.
-  } apply A. apply H. reflexivity.
-Qed.
-
-
-Theorem filter_challenge_2: forall X (test: X -> bool) (l l2: list X),
-    subseq l2 l ->
+    
+Theorem filter_challenge_2: forall X (test: X -> bool) (l1 l2: list X),
+    subseq l2 l1 ->
     All (fun x => test x = true) l2 ->
-    (forall l3, subseq l3 l -> length l3 <=? length l2 = true) 
-    -> filter test l = l2.
+    (forall l3, subseq l3 l1 -> length l3 <=? length l2 = true) 
+    -> filter test l1 = l2.
 Proof.
-(*
-  intros X test l.
-  induction l.
-  + intros l2 Hsub Hall Hlen. inversion Hsub. reflexivity.
-  + intros l2 Hsub Hall Hlen. inversion Hsub.
-    * rewrite <- H in Hlen, Hall, Hsub. assert (Hlen': subseq [x] (x::l)). 
-      { apply subseq_in. reflexivity. apply subseq_nil. } 
-      apply Hlen in Hlen'. simpl in Hlen'. discriminate Hlen'.
-    * rewrite Heq. simpl. destruct (test x).
-      - apply f_equal. { apply IHl.
-        + apply H1.
-        + rewrite <- H0 in Hall. simpl in Hall. 
-          destruct Hall as [H0t Hall]. apply Hall.
-        + intros l3 Hsub'. apply eq_list__leb_length_true in H0.
-          apply leb_cons_n_m__leb_n_m in H0.
-          apply leb_true_trans with (length l2).
-          admit.
-      }
-      - admit.
-    * admit.
-*) 
-Admitted.
-
+  intros X test l1. induction l1; intros l2 Hsub Hall Hlen;
+    inversion Hsub; subst.
+  + reflexivity.
+  + assert (subseq [x] (x :: l1)) as Hsub' 
+    by repeat (constructor || reflexivity).
+    apply Hlen in Hsub'. inversion Hsub'.
+  + destruct (test x) eqn: D. simpl. rewrite D. apply f_equal.
+    apply IHl1. assumption. simpl in Hall. destruct Hall as [T Hall].
+    assumption. intros l2 H. 
+    assert (subseq (x :: l2) (x :: l1)). 
+    { apply subseq_in. reflexivity. apply H. }
+    apply Hlen in H0. simpl in H0. apply H0.
+    simpl in Hall. rewrite D in Hall. destruct Hall as [C Hall].
+    inversion C.
+  + assert (subseq (x :: l2) (x :: l1)). { apply subseq_in. reflexivity.
+    apply H1. }
+    apply Hlen in H. 
+    assert (forall T (t: T) l, (length (t :: l) = S (length l))) as HC.
+    { induction l; reflexivity. }
+    rewrite HC in H. 
+    assert (forall n m, n = m -> S n <=? m = false) as HC'. {
+      intros n m.
+      generalize dependent n.
+      induction m; intros n P. subst. reflexivity. simpl. 
+      rewrite P. apply IHm. reflexivity.
+    }
+    rewrite HC' in H. inversion H. reflexivity.
+Qed.
 
 (** **** Exercise: 4 stars, standard, optional (palindromes)  
 
