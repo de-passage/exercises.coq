@@ -1949,7 +1949,7 @@ Definition manual_grade_for_filter_challenge : option (nat*string) := None.
     this: Among all subsequences of [l] with the property that [test]
     evaluates to [true] on all their members, [filter test l] is the
     longest.  Formalize this claim and prove it. *)
-    
+
 Theorem filter_challenge_2: forall X (test: X -> bool) (l1 l2: list X),
     subseq l2 l1 ->
     All (fun x => test x = true) l2 ->
@@ -2011,19 +2011,28 @@ Qed.
 Inductive pal {X:Type}: list X -> Prop :=
 | pal_nil : pal []
 | pal_unit x : pal [x]
-| pal_cons x xs (H: pal xs): pal (x::xs)
+| pal_cons x xs (H: pal xs): pal (x::xs ++ [x])
 .
 
 Theorem pal_app_rev : forall X (l: list X),
   pal (l ++ rev l).
 Proof.
-Admitted.
+  intros X l. induction l.
+  simpl. apply pal_nil.
+  simpl. rewrite app_assoc. apply pal_cons. apply IHl.
+Qed.
 
 Theorem pal_rev: forall X (l: list X),
   pal l -> l = rev l.
 Proof.
-Admitted.
-
+  intros.
+  induction H; try reflexivity. simpl.
+  assert (forall T (l:T) ls, rev (ls ++ [l]) = l :: rev ls). {
+  intros T l ls. induction ls. reflexivity. simpl. 
+  rewrite IHls. reflexivity. }
+  rewrite H0. rewrite <- IHpal.
+  reflexivity.
+Qed.
 (* Do not modify the following line: *)
 Definition manual_grade_for_pal_pal_app_rev_pal_rev : option (nat*string) := None.
 (** [] *)
