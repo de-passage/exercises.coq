@@ -2010,7 +2010,7 @@ Qed.
 
 Inductive pal {X:Type}: list X -> Prop :=
 | pal_nil : pal []
-| pal_unit x : pal [x]
+| pal_reverse l : l = rev l -> pal l
 | pal_cons x xs (H: pal xs): pal (x::xs ++ [x])
 .
 
@@ -2026,7 +2026,8 @@ Theorem pal_rev: forall X (l: list X),
   pal l -> l = rev l.
 Proof.
   intros.
-  induction H; try reflexivity. simpl.
+  induction H; try assumption.
+  reflexivity. simpl.
   assert (forall T (l:T) ls, rev (ls ++ [l]) = l :: rev ls). {
   intros T l ls. induction ls. reflexivity. simpl. 
   rewrite IHls. reflexivity. }
@@ -2049,8 +2050,16 @@ Definition manual_grade_for_pal_pal_app_rev_pal_rev : option (nat*string) := Non
 Theorem pa_conversion: forall X (l: list X),
   l = rev l -> pal l.
 Proof.
-Admitted.
+  intros X l. intros H. apply pal_reverse. apply H. 
+Qed.
 
+Theorem pal_rev_iff: forall X (l: list X),
+  l = rev l <-> pal l.
+Proof.
+  split.
+  + apply pa_conversion.
+  + apply pal_rev.
+Qed.
 
 (** **** Exercise: 4 stars, advanced, optional (NoDup)  
 
