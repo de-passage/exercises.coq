@@ -2078,7 +2078,8 @@ Qed.
     lists (with elements of type X) that have no elements in
     common. *)
 
-(* FILL IN HERE *)
+Fixpoint disjoint {X:Type} (l1 l2: list X): Prop :=
+  ~(exists x, In x l1 /\ In x l2).
 
 (** Next, use [In] to define an inductive proposition [NoDup X
     l], which should be provable exactly when [l] is a list (with
@@ -2087,12 +2088,91 @@ Qed.
     bool []] should be provable, while [NoDup nat [1;2;1]] and
     [NoDup bool [true;true]] should not be.  *)
 
-(* FILL IN HERE *)
+Inductive NoDup {X:Type}: list X -> Prop :=
+ | NoDup_nil: NoDup []
+ | NoDup_cons x l1: ~(In x l1) -> 
+                    NoDup l1 ->
+                    NoDup (x :: l1).
 
 (** Finally, state and prove one or more interesting theorems relating
     [disjoint], [NoDup] and [++] (list append).  *)
+  
+Lemma In_l1_l2_not_disjoint: forall X l1 l2 (x: X),
+  In x l1 /\ In x l2 -> ~(disjoint l1 l2).
+Proof.
+  intros. unfold not. intros C. destruct H as [H1 H2].
+  unfold disjoint in C.
+  destruct l1, l2.
+  inversion H1. inversion H1. inversion H2.
+  apply C.
+  exists x. split; assumption.
+Qed.
 
-(* FILL IN HERE *)
+Theorem NoDup_cons': forall X (x:X) l,
+  NoDup (x::l) -> NoDup l.
+Proof. 
+  intros. inversion H; subst. assumption.
+Qed.
+
+Theorem app_NoDup_disjoint: forall X (l1 l2: list X),
+  NoDup (l1 ++ l2) -> disjoint l1 l2.
+Proof.
+  induction l1 as [| l1]; simpl; unfold not; intros l2 H [x [H1 H2]].
+  - inversion H1.
+  - destruct H1 as [H1 | H1].
+    * subst. inversion H; subst. apply H3. apply In_app_iff. 
+      right. apply H2.
+    * assert (~(disjoint l0 l2)). 
+      apply In_l1_l2_not_disjoint with x. split; assumption.
+      apply H0. apply IHl1.
+      apply NoDup_cons' with l1. assumption.
+Qed.
+
+Lemma NoDup_cons__not_In_tail: forall X (x:X) l,
+  NoDup (x :: l) -> ~(In x l).
+Proof.
+  intros. induction l; unfold not; intros. inversion H0.
+  inversion H; subst. apply H3 in H0. inversion H0.
+Qed.
+
+Lemma not_In_cons: forall X x1 x2 (l: list X),
+  ~In x1 (x2 :: l) -> ~In x1 l.
+Proof.
+  unfold not; intros. simpl in H. apply H. right. assumption.
+Qed.
+
+Lemma In_exclusion: forall X (x:X) l1 l2,
+  ~(In x l1) -> In x (l1 ++ l2) -> In x l2.
+Proof.
+  intros. generalize dependent l2. induction l1; intros.
+  simpl in H0. assumption. simpl in H0. inversion H0; subst.
+  simpl in H. exfalso. apply H. left. reflexivity.
+  apply IHl1. apply not_In_cons in H. assumption. assumption.
+Qed.
+
+Lemma disjoint_cons: forall X (x:X) l1 l2,
+  disjoint (x :: l1) l2 -> disjoint l1 l2.
+Proof. 
+  intros. destruct l1.
+  + simpl. unfold not. intros [x' [C H']]. inversion C.
+  + simpl. unfold not. intros [x' [[E| I] H']].
+    simpl in H. apply H. exists x'. split. right. left. assumption.
+    assumption. simpl in H. apply H. exists x'. split.
+    right. right. assumption. assumption.
+Qed.
+
+Theorem NoDup_disjoint: forall X (l1 l2: list X),
+  disjoint l1 l2 -> NoDup l1 -> NoDup l2 -> NoDup (l1 ++ l2).
+Proof.
+  intros. induction l1; intros.
+  + simpl. assumption.
+  + simpl. apply NoDup_cons. unfold not. intros. simpl in H1.
+    pose proof (NoDup_cons__not_In_tail _ _ _ H0). 
+    pose proof (In_exclusion _ _ _ _ H3 H2). simpl in H.
+    apply H. exists x. split. left. reflexivity. assumption.
+    apply IHl1. apply disjoint_cons in H. assumption.
+    apply NoDup_cons' in H0. assumption.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_NoDup_disjoint_etc : option (nat*string) := None.
