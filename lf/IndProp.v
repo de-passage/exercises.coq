@@ -1650,8 +1650,15 @@ Proof.
     exists s'1, s'2, s'3. split; try split; try assumption. intros m.
     apply MUnionR. apply H'3.
   - simpl. intros H. inversion H.
-  - simpl. intros H.
-        
+  - simpl. intros Hlen. induction s1.
+    + simpl in Hlen. simpl in IH2. 
+      apply IH2 in Hlen as [s'1[s'2[s'3[H'1[H'2 H'3]]]]]. 
+      exists s'1, s'2, s'3. simpl. split; try split; try assumption.
+    + exists [], (x :: s1), s2. simpl. split. reflexivity.
+      split. unfold not. intros. inversion H. induction m.
+      simpl. assumption. remember (x :: s1) as s1'. simpl.
+      rewrite <- app_assoc. apply MStarApp; assumption.
+Qed.
 End Pumping.
 (** [] *)
 
