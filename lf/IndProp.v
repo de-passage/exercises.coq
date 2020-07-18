@@ -2192,13 +2192,18 @@ Lemma in_split : forall (X:Type) (x:X) (l:list X),
   In x l ->
   exists l1 l2, l = l1 ++ x :: l2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction l; intros; inversion H; subst.
+  + exists [], l. simpl. reflexivity.
+  + apply IHl in H0 as [l1 [l2 H']].
+    exists (x0::l1), l2. rewrite H'. reflexivity.
+Qed.
 
 (** Now define a property [repeats] such that [repeats X l] asserts
     that [l] contains at least one repeated element (of type [X]).  *)
 
 Inductive repeats {X:Type} : list X -> Prop :=
-  (* FILL IN HERE *)
+  | repeated_x x l: In x l -> repeats (x::l)
+  | repeated_cons x l: repeats l -> repeats (x::l)
 .
 
 (** Now, here's a way to formalize the pigeonhole principle.  Suppose
@@ -2214,13 +2219,23 @@ Inductive repeats {X:Type} : list X -> Prop :=
     manage to do this, you will not need the [excluded_middle]
     hypothesis. *)
 
+Lemma In_cons: forall X (x x':X) l,
+  In x l -> In x (x' :: l).
+Proof.
+  intros. simpl. right. assumption.
+Qed.
+
 Theorem pigeonhole_principle: forall (X:Type) (l1  l2:list X),
-   excluded_middle ->
+   (* excluded_middle -> *)
    (forall x, In x l1 -> In x l2) ->
    length l2 < length l1 ->
    repeats l1.
 Proof.
-   intros X l1. induction l1 as [|x l1' IHl1'].
+  intros X l1. induction l1 as [|x l1' IHl1']; intros.
+  + inversion H0.
+  + assert (In x (x::l1')) by (left; reflexivity). 
+    apply H in H1. 
+    apply in_split in H1 as [m1[m2 Hm]].
   (* FILL IN HERE *) Admitted.
 
 (* Do not modify the following line: *)
@@ -2369,7 +2384,17 @@ Lemma app_ne : forall (a : ascii) s re0 re1,
     ([ ] =~ re0 /\ a :: s =~ re1) \/
     exists s0 s1, s = s0 ++ s1 /\ a :: s0 =~ re0 /\ s1 =~ re1.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split; intros.
+  - inversion H; subst. destruct s1 eqn:D1; subst.
+    + left. split; assumption.
+    + right. exists l, s2. simpl in H1. injection H1; intros; subst.
+      split; auto.
+  - destruct H as [[HE HM]| [s1[s2[HE[HM1 HM2]]]]].
+    + replace (a::s) with ([] ++ a::s) by reflexivity. 
+      apply MApp; assumption.
+    + rewrite HE. replace (a::s1 ++ s2) with ((a::s1) ++ s2) 
+      by reflexivity. apply MApp; assumption.
+Qed.
 (** [] *)
 
 (** [s] matches [Union re0 re1] iff [s] matches [re0] or [s] matches [re1]. *)
@@ -2405,7 +2430,16 @@ Lemma star_ne : forall (a : ascii) s re,
     a :: s =~ Star re <->
     exists s0 s1, s = s0 ++ s1 /\ a :: s0 =~ re /\ s1 =~ Star re.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split; intros.
+  + remember (a::s). remember (Star re). induction H; try discriminate.
+    destruct s1. 
+    - simpl in Heql. apply IHexp_match2; assumption.
+    - injection Heql. injection Heqr. intros. subst. exists s1, s2.
+      repeat split || auto.
+  + destruct H as [s1[s2[HE[HM1 HM2]]]]. subst. 
+    replace (a::s1++s2) with ((a::s1)++s2) by reflexivity.
+    apply MStarApp; assumption.
+Qed.
 (** [] *)
 
 (** The definition of our regex matcher will include two fixpoint
