@@ -2628,14 +2628,32 @@ Qed.
     that are logical equivalences. You can then reason about these
     [Prop]'s naturally using [intro] and [destruct]. *)
 
+Lemma matches_empty_iff: forall re,
+  match_eps re = true <-> [] =~ re.
+Proof.
+  intros.
+  assert (reflect ([] =~ re) (match_eps re)).
+  apply match_eps_refl. destruct H; subst;
+  split; intros.
+  + assumption.
+  + reflexivity.
+  + discriminate.
+  + contradiction.
+Qed.
+
 Lemma derive_corr : derives derive.
 Proof.
   unfold derives. unfold is_der.
   split; intros; generalize dependent a; generalize dependent s.
-  + induction re; intros; inversion H; subst; simpl.
-    - rewrite eqb_refl. apply MEmpty.
-    - destruct (match_eps re1) eqn:D1.
-      apply refl_matches_eps.
+  - induction re; intros; inversion H; subst.
+    + simpl. rewrite eqb_refl. constructor.
+    + admit.
+    + admit.
+    + admit.
+    + admit.
+  - admit.
+Admitted.
+
 (** [] *)
 
 (** We'll define the regex matcher using [derive]. However, the only
@@ -2652,8 +2670,11 @@ Definition matches_regex m : Prop :=
 
     Complete the definition of [regex_match] so that it matches
     regexes. *)
-Fixpoint regex_match (s : string) (re : @reg_exp ascii) : bool
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint regex_match (s : string) (re : @reg_exp ascii) : bool :=
+  match s with 
+  | nil => match_eps re
+  | a :: s' => regex_match s' (derive a re)
+  end.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (regex_refl)  
@@ -2669,9 +2690,18 @@ Fixpoint regex_match (s : string) (re : @reg_exp ascii) : bool
     character [x] and regex [re], then a natural proof applies
     [derive_corr] to [x] and [re] to prove that [x :: s =~ re] given
     [s =~ derive x re], and vice versa. *)
+
 Theorem regex_refl : matches_regex regex_match.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold matches_regex. intros. generalize dependent re.
+  induction s; intros. simpl.
+  + destruct (match_eps_refl re); constructor; assumption.
+  + simpl. destruct (IHs (derive x re)); constructor; 
+    destruct (derive_corr x re s).
+    - apply H1 in H. apply H.
+    - unfold not. intros. apply H0 in H2. contradiction.
+Qed.
+  
 (** [] *)
 
 (* Wed Jan 9 12:02:45 EST 2019 *)
