@@ -1512,7 +1512,8 @@ Inductive ceval : com -> state -> state -> Prop :=
       st  =[ c ]=> st' ->
       st' =[ WHILE b DO c END ]=> st'' ->
       st  =[ WHILE b DO c END ]=> st''
-(* FILL IN HERE *)
+  | E_Havoc : forall n s st,
+       st =[ HAVOC s ]=> (s !-> n; st)
 
   where "st =[ c ]=> st'" := (ceval c st st').
 Close Scope imp_scope.
@@ -1522,12 +1523,15 @@ Close Scope imp_scope.
 
 Example havoc_example1 : empty_st =[ (HAVOC X)%imp ]=> (X !-> 0).
 Proof.
-(* FILL IN HERE *) Admitted.
+  apply E_Havoc.
+Qed.
 
 Example havoc_example2 :
   empty_st =[ (SKIP;; HAVOC Z)%imp ]=> (Z !-> 42).
 Proof.
-(* FILL IN HERE *) Admitted.
+  eapply E_Seq. apply E_Skip.
+  apply E_Havoc.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_Check_rule_for_HAVOC : option (nat*string) := None.
@@ -1556,7 +1560,17 @@ Definition pYX :=
 
 Theorem pXY_cequiv_pYX :
   cequiv pXY pYX \/ ~cequiv pXY pYX.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  left. unfold cequiv, pXY, pYX. split; intros.
+  - inversion H; subst.
+    inversion H2; subst. inversion H5; subst.
+    eapply E_Seq. apply E_Havoc.
+    rewrite t_update_permute. apply E_Havoc.
+    unfold not. intros. inversion H0.
+  - inversion H; inversion H2; inversion H5; subst.
+    eapply E_Seq. apply E_Havoc. rewrite t_update_permute.
+    apply E_Havoc. unfold not. intros C. inversion C.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (havoc_copy)  
