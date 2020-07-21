@@ -1384,33 +1384,7 @@ Theorem var_not_used_in_aexp__subst_equiv_property: forall x1 x2 a1 a2,
   cequiv (x1 ::= a1;; x2 ::= a2)
          (x1 ::= a1;; x2 ::= subst_aexp x1 a1 a2).
 Proof.
-  intros x1 x2 a1 a2 Hv.
-  split.
-  -
-    generalize dependent x2.
-    generalize dependent x1.
-    generalize dependent a1.
-    generalize dependent st'.
-    generalize dependent st.
-    induction a2; intros st st' a1 x1 Hx1 x2 H;
-    inversion H; inversion H5; inversion H2; subst; 
-    eapply E_Seq; try eassumption.
-    + simpl. destruct (eqb_string x1 x) eqn: D.
-      * apply eqb_string_true_iff in D; subst. apply E_Ass.
-        rewrite t_update_eq. rewrite aeval_weakening; auto.
-      * apply eqb_string_false_iff in D. 
-        apply E_Ass. simpl.
-        rewrite t_update_neq. reflexivity. assumption.
-    + remember (x1 !-> aeval st a1; st) as st1. simpl.
-      apply E_Ass. simpl. admit.
-    + admit.
-    + admit.
-  - intros H. inversion H; subst; inversion H2; subst; inversion H5;
-    subst. eapply E_Seq. apply H2.
-    induction a2.
-    + apply H5.
-    + simpl. 
-      
+Admitted.
 
 (* [] *) 
 
@@ -1421,7 +1395,14 @@ Proof.
 Theorem inequiv_exercise:
   ~ cequiv (WHILE true DO SKIP END) SKIP.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold not. intros. unfold cequiv in H. 
+  destruct H with empty_st empty_st.
+  assert (empty_st =[SKIP]=> empty_st) by constructor.
+  apply H1 in H2.
+  apply loop_never_stops in H2. inversion H2.
+Qed.
+
+  
 (** [] *)
 
 (* ################################################################# *)
