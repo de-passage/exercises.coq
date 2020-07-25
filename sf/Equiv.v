@@ -1610,7 +1610,7 @@ Proof. (* FILL IN HERE *) Admitted.
 Definition p1 : com :=
   (WHILE ~ (X = 0) DO
     HAVOC Y;;
-    X ::= X + 1
+    X ::= X + 1 
   END)%imp.
 
 Definition p2 : com :=
@@ -1625,12 +1625,35 @@ Definition p2 : com :=
 
 Lemma p1_may_diverge : forall st st', st X <> 0 ->
   ~ st =[ p1 ]=> st'.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. 
+  unfold not. intros.
+  remember p1. induction H0; try discriminate.
+  + inversion Heqc; subst. inversion H0.
+    apply negb_false_iff in H2. apply eqb_eq in H2.
+    apply H in H2. inversion H2.
+  + inversion Heqc; subst. 
+    inversion H0_; subst. inversion H6; subst.
+    simpl in H6.
+    assert ((X !-> aeval st'0 (X + 1); st'0) X <> 0). {
+      simpl. destruct (st'0 X). 
+      + simpl. rewrite t_update_eq. auto.
+      + simpl. rewrite t_update_eq. auto.
+    }  apply IHceval2 in H1. inversion H1.
+    assumption.
+Qed.
 
-Lemma p2_may_diverge : forall st st', st X <> 0 ->
+Lemma p3_may_diverge : forall st st', st X <> 0 ->
   ~ st =[ p2 ]=> st'.
 Proof.
-(* FILL IN HERE *) Admitted.
+  unfold not. intros. remember p2.
+  induction H0; try discriminate.
+  + inversion Heqc; subst. inversion H0; subst.
+    apply negb_false_iff in H2. apply eqb_eq in H2.
+    auto.
+  + inversion Heqc; subst.
+    inversion H0_; subst. apply IHceval2 in H. inversion H.
+    assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced (p1_p2_equiv)  
