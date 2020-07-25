@@ -1642,7 +1642,7 @@ Proof.
     assumption.
 Qed.
 
-Lemma p3_may_diverge : forall st st', st X <> 0 ->
+Lemma p2_may_diverge : forall st st', st X <> 0 ->
   ~ st =[ p2 ]=> st'.
 Proof.
   unfold not. intros. remember p2.
@@ -1662,7 +1662,25 @@ Qed.
     equivalent. *)
 
 Theorem p1_p2_equiv : cequiv p1 p2.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  unfold cequiv. intros. destruct (st X) eqn:D.
+  + unfold p1, p2. split; intros.
+    - inversion H; subst.
+      * apply E_WhileFalse. assumption.
+      * inversion H2. apply negb_true_iff in H1.
+        apply eqb_neq in H1. apply H1 in D. 
+        inversion D.
+    - inversion H; subst.
+      * apply E_WhileFalse. assumption.
+      * inversion H3; subst. simpl in H2.
+        apply negb_true_iff in H2. 
+        apply eqb_neq in H2. contradiction.
+  + split; intros.
+    - apply p1_may_diverge in H. inversion H.
+      rewrite D. auto.
+    - apply p2_may_diverge in H. inversion H.
+      rewrite D. auto.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced (p3_p4_inequiv)  
