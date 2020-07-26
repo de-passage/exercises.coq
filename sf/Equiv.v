@@ -1663,7 +1663,7 @@ Qed.
 
 Theorem p1_p2_equiv : cequiv p1 p2.
 Proof.
-  unfold cequiv. intros. destruct (st X) eqn:D.
+  unfold cequiv. intros. destruct (st X) eqn  :D.
   + unfold p1, p2. split; intros.
     - inversion H; subst.
       * apply E_WhileFalse. assumption.
@@ -1701,7 +1701,29 @@ Definition p4 : com :=
   Z ::= 1)%imp.
 
 Theorem p3_p4_inequiv : ~ cequiv p3 p4.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. 
+  unfold not, cequiv, p3, p4. intros [H1 H2].
+  assert ((X!->1) =[ p3 ]=> (Z!->0; X!->0)). {
+  eapply E_Seq. eapply E_Ass. reflexivity. simpl.
+  eapply E_WhileTrue. reflexivity. eapply E_Seq.
+  apply E_Havoc. apply E_Havoc. 
+  rewrite t_update_permute. rewrite t_update_shadow.
+  rewrite t_update_permute. rewrite t_update_shadow.
+  eapply E_WhileFalse. reflexivity. unfold not. 
+  intros. inversion H. unfold not. intros. 
+  inversion H.
+  } apply H1 in H. inversion H; subst.
+  inversion H4; subst. simpl in H7.
+  rewrite t_update_shadow in H7. 
+  inversion H7; subst. simpl in H8.
+  assert (
+    (Z !-> 1; X!->0) Z = (Z !-> 0; X!->0) Z). {
+      rewrite H8. reflexivity.
+    }
+  rewrite ?t_update_eq in H0. inversion H0.
+Qed.
+
+
 (** [] *)
 
 (** **** Exercise: 5 stars, advanced, optional (p5_p6_equiv)  
