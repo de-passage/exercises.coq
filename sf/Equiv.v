@@ -1589,7 +1589,24 @@ Definition pcopy :=
 
 Theorem ptwice_cequiv_pcopy :
   cequiv ptwice pcopy \/ ~cequiv ptwice pcopy.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  right. unfold cequiv, not. intros [H1 H2].
+  assert (empty_st=[ptwice]=>(Y!->1;X!->0)). {
+    eapply E_Seq. apply E_Havoc. apply E_Havoc.
+  } apply H1 in H. inversion H; subst.
+  inversion H4; subst. inversion H7; subst.
+  simpl in H8. 
+  replace ((X!->n)X) with n in H8 by reflexivity. 
+  assert ((Y!->n;X!->n)Y=(Y!->1;X!->0)Y). {
+    rewrite H8. reflexivity.
+  } rewrite ?t_update_eq in H0. subst.
+  assert ((Y!->1;X!->1)X=(Y!->1;X!->0)X). {
+    rewrite H8. reflexivity.
+  } rewrite t_update_neq in H0. rewrite t_update_eq in H0.
+  rewrite t_update_neq in H0. rewrite t_update_eq in H0.
+  inversion H0. unfold not; intros. inversion H3.
+  unfold not; intros. inversion H3.
+Qed.
 (** [] *)
 
 (** The definition of program equivalence we are using here has some
