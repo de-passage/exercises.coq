@@ -1384,7 +1384,44 @@ Theorem var_not_used_in_aexp__subst_equiv_property: forall x1 x2 a1 a2,
   cequiv (x1 ::= a1;; x2 ::= a2)
          (x1 ::= a1;; x2 ::= subst_aexp x1 a1 a2).
 Proof.
-Admitted.
+  unfold cequiv. intros. split; intros.
+  - inversion H0; subst. eapply E_Seq. eassumption.
+    inversion H6; subst. apply E_Ass.
+    inversion H3; subst. induction a2; simpl.
+    + reflexivity.
+    + destruct (eqb_string x1 x) eqn:D.
+      * apply eqb_string_true_iff in D; subst.
+        rewrite aeval_weakening by assumption.
+        rewrite t_update_eq. reflexivity.
+      * reflexivity.
+    + rewrite IHa2_1. rewrite IHa2_2. reflexivity.
+      apply E_Ass. reflexivity. eapply E_Seq.
+      apply E_Ass. reflexivity. apply E_Ass.
+      reflexivity. apply E_Ass. reflexivity.
+      eapply E_Seq. apply E_Ass. reflexivity.
+      apply E_Ass. reflexivity.
+    + rewrite IHa2_1; try rewrite IHa2_2; 
+      try (apply E_Ass); 
+      try (eapply E_Seq; apply E_Ass);
+      reflexivity.
+    + rewrite IHa2_1; 
+      try (rewrite IHa2_2);
+      try (apply E_Ass);
+      try (eapply E_Seq; apply E_Ass);
+      reflexivity.
+  - inversion H0; inversion H3; inversion H6; subst; simpl. 
+    eapply E_Seq. eassumption. eapply E_Ass.
+    induction a2; simpl; try (
+      rewrite IHa2_1; try rewrite IHa2_2;
+      try eapply E_Seq;
+      try eassumption;
+      try apply E_Ass); try reflexivity.
+    + destruct (eqb_string x1 x) eqn:D.
+      * apply eqb_string_true_iff in D; subst.
+       rewrite aeval_weakening by assumption.
+       rewrite t_update_eq. reflexivity.
+      * reflexivity.
+Qed.
 
 (* [] *) 
 
