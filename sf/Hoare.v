@@ -124,7 +124,15 @@ Definition as4 : Assertion :=
             ~ (((S (st Z)) * (S (st Z))) <= st X).
 Definition as5 : Assertion := fun st => True.
 Definition as6 : Assertion := fun st => False.
-(* FILL IN HERE *)
+(* (within the context of the state st begin tested)
+as1: X is equal to 3
+as2: X is less than or equal to Y
+as3: X is either 3 or less than or equal to Y
+as4: Z squared is less than or equal to X and 
+     X is strictly less than Z + 1 squared
+as5: Always succeed
+as6: Fail inconditionally
+*)
 End ExAssertions.
 (** [] *)
 
@@ -220,20 +228,28 @@ Notation "{{ P }}  c  {{ Q }}" :=
     Paraphrase the following Hoare triples in English.
 
    1) {{True}} c {{X = 5}}
+      X is always equal to true after running c
 
    2) {{X = m}} c {{X = m + 5)}}
+      Running c yields X + 5. (m implicitely is 0 is X hasn't
+      been previously defined in our definition).
 
    3) {{X <= Y}} c {{Y <= X}}
+      c takes a state where X is less than or equal to Y, and produces
+      a state where Y is less than or equal to X.
 
    4) {{True}} c {{False}}
+      c always diverges
 
    5) {{X = m}}
       c
       {{Y = real_fact m}}   
+      c assigns (X!) to Y
 
    6) {{X = m}}
       c
       {{(Z * Z) <= m /\ ~ (((S Z) * (S Z)) <= m)}}
+      c assigns to Z the square root of X rounded down
 *)
 (* FILL IN HERE 
 
@@ -245,26 +261,35 @@ Notation "{{ P }}  c  {{ Q }}" :=
     claimed relation between [P], [c], and [Q] is true?
 
    1) {{True}} X ::= 5 {{X = 5}}
+      valid
 
    2) {{X = 2}} X ::= X + 1 {{X = 3}}
+      valid
 
    3) {{True}} X ::= 5;; Y ::= 0 {{X = 5}}
+      valid
 
    4) {{X = 2 /\ X = 3}} X ::= 5 {{X = 0}}
+      invalid
 
    5) {{True}} SKIP {{False}}
+      invalid
 
    6) {{False}} SKIP {{True}}
+      valid
 
    7) {{True}} WHILE true DO SKIP END {{False}}
+      valid
 
    8) {{X = 0}}
         WHILE X = 0 DO X ::= X + 1 END
       {{X = 1}}
+      valid
 
    9) {{X = 1}}
         WHILE ~(X = 0) DO X ::= X + 1 END
       {{X = 100}}
+      invalid
 *)
 (* FILL IN HERE 
 
@@ -483,7 +508,18 @@ Proof.
    ...into formal statements (use the names [assn_sub_ex1]
    and [assn_sub_ex2]) and use [hoare_asgn] to prove them. *)
 
-(* FILL IN HERE *)
+Example assn_sub_ex1:
+  {{ (fun st => st X <= 10) [ X |-> 2 * X]}}
+  X ::= 2 * X
+  {{ fun st => st X <= 10 }}.
+Proof.
+  apply hoare_asgn. Qed.
+
+Example assn_sub_ex2:
+  {{ (fun st => 0 <= st X /\ st X <= 5) [ X |-> 3 ] }}
+  X ::= 3
+  {{ fun st => 0 <= st X /\ st X <= 5}}.
+Proof. apply hoare_asgn. Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_hoare_asgn_examples : option (nat*string) := None.
@@ -503,9 +539,20 @@ Definition manual_grade_for_hoare_asgn_examples : option (nat*string) := None.
     argue informally that it is really a counterexample.  (Hint:
     The rule universally quantifies over the arithmetic expression
     [a], and your counterexample needs to exhibit an [a] for which
-    the rule doesn't work.) *)
+    the rule doesn't work.)
+    
+    with a = X + 1, we have {{ X = X + 1 }} as a postcondition, which
+    is obviously wrong
+    *)
 
-(* FILL IN HERE *)
+Example hoare_asgn_wrong: 
+  ~ {{ fun st => True }} X ::= X + 1 {{ fun st => st X = st X + 1 }}.
+Proof.
+  unfold not, hoare_triple. intros.
+  remember (X!->1) as st. assert (empty_st =[X::=X+1]=> st).
+  subst. apply E_Ass. reflexivity. apply H in H0. subst.
+  rewrite t_update_eq in H0. inversion H0. trivial.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_hoare_asgn_wrong : option (nat*string) := None.
@@ -536,7 +583,12 @@ Theorem hoare_asgn_fwd :
   {{fun st => P (X !-> m ; st)
            /\ st X = aeval (X !-> m ; st) a }}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold hoare_triple. intros.
+  destruct H0. inversion H; subst. split.
+  + rewrite t_update_shadow. rewrite t_update_same. assumption.
+  + rewrite t_update_eq. rewrite t_update_shadow. rewrite t_update_same.
+    reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced, optional (hoare_asgn_fwd_exists)  
@@ -560,7 +612,10 @@ Theorem hoare_asgn_fwd_exists :
                 st X = aeval (X !-> m ; st) a }}.
 Proof.
   intros a P.
-  (* FILL IN HERE *) Admitted.
+  unfold hoare_triple. intros. inversion H; subst.
+  exists (aeval st X). simpl. rewrite ?t_update_shadow.
+  rewrite t_update_same. rewrite t_update_eq. auto.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
@@ -814,7 +869,25 @@ Qed.
    [assn_sub_ex2']) and use [hoare_asgn] and [hoare_consequence_pre]
    to prove them. *)
 
-(* FILL IN HERE *)
+Example assn_sub_ex1': 
+  {{ fun st => st X + 1 <= 5 }}
+  X ::= X + 1
+  {{ fun st => st X <= 5 }}.
+Proof.
+  eapply hoare_consequence_pre. apply hoare_asgn.
+  intros st H. unfold assn_sub. rewrite t_update_eq. simpl.
+  assumption.
+Qed.
+
+Example assn_sub_ex2':
+  {{ fun st => 0 <= 3 /\ 3 <= 5 }}
+  X ::= 3 
+  {{ fun st => 0 <= st X /\ st X <= 5 }}.
+Proof.
+  eapply hoare_consequence_pre. apply hoare_asgn.
+  intros st H. unfold assn_sub. rewrite t_update_eq. simpl.
+  assumption.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_hoare_asgn_examples_2 : option (nat*string) := None.
