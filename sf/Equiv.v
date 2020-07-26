@@ -1745,7 +1745,36 @@ Definition p6 : com :=
   (X ::= 1)%imp.
 
 Theorem p5_p6_equiv : cequiv p5 p6.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. 
+  unfold cequiv. split; intros.
+  + remember p5.
+    induction H; try discriminate;
+      inversion Heqc; subst. 
+    - inversion H.
+      apply negb_false_iff in H1. apply eqb_eq in H1.
+      assert (st = (X!->1; st)). {
+        rewrite <- H1. rewrite t_update_same. 
+        reflexivity.
+      } 
+      replace (st =[p6]=> st) with 
+        (st=[p6]=>(X!->1; st)). apply E_Ass. 
+      reflexivity. rewrite <- H0. reflexivity.
+    - apply IHceval2 in Heqc. inversion Heqc; subst.
+      simpl. inversion H0; subst. rewrite t_update_shadow.
+      apply E_Ass. reflexivity.
+  + inversion H. simpl in H4. subst.
+    destruct (beval st (BEq (st X) 1)) eqn:D.
+    - simpl in D. assert (st = (X!->1; st)). {
+      apply eqb_eq in D. rewrite <- D. rewrite t_update_same.
+      reflexivity.
+    } rewrite H0. rewrite t_update_shadow. apply E_WhileFalse.
+      reflexivity.
+    - inversion D. eapply E_WhileTrue.
+      * simpl. apply negb_true_iff. assumption.
+      * apply E_Havoc.
+      * apply E_WhileFalse. reflexivity.
+Qed.
+
 (** [] *)
 
 End Himp.
