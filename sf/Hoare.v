@@ -1188,7 +1188,18 @@ Theorem if_minus_plus :
   FI
   {{fun st => st Y = st X + st Z}}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply hoare_if.
+  + eapply hoare_consequence_pre. eapply hoare_asgn.
+    intros st [_ H]. unfold assn_sub, t_update. simpl.
+    rewrite add_sub_assoc. rewrite plus_comm.
+    rewrite <- add_sub_assoc. rewrite sub_diag.
+    apply plus_n_O. apply le_n. 
+    unfold bassn, beval, aeval in H.
+    rewrite leb_le in H. assumption.
+  + eapply hoare_consequence_pre. eapply hoare_asgn.
+    intros st [_ H]. unfold assn_sub, t_update. simpl.
+    reflexivity.
+Qed.
 (** [] *)
 
 (* ----------------------------------------------------------------- *)
@@ -1266,7 +1277,13 @@ Inductive ceval : com -> state -> state -> Prop :=
       st  =[ c ]=> st' ->
       st' =[ WHILE b DO c END ]=> st'' ->
       st  =[ WHILE b DO c END ]=> st''
-(* FILL IN HERE *)
+  | E_If1True: forall st st' b c,
+      beval st b = true ->
+      st =[ c ]=> st' ->
+      st =[ IF1 b THEN c FI ]=> st'
+  | E_If1False: forall st b c,
+      beval st b = false ->
+      st =[ IF1 b THEN c FI ]=> st
 
   where "st '=[' c ']=>' st'" := (ceval c st st').
 Close Scope imp_scope.
@@ -1289,7 +1306,18 @@ Notation "{{ P }}  c  {{ Q }}" := (hoare_triple P c Q)
     for one-sided conditionals. Try to come up with a rule that is
     both sound and as precise as possible. *)
 
-(* FILL IN HERE *)
+Theorem hoare_if1: forall P Q b c,
+  {{ fun st => P st /\ bassn b st }} c {{ Q }} ->
+  ((fun st => P st /\ ~(bassn b st)) ->> Q) ->
+  {{ P }} (IF1 b THEN c FI)%imp {{ Q }}.
+Proof.
+  intros. intros st st' HC HP.
+  inversion HC; subst.
+  + apply (H st st'). assumption. split. assumption. 
+    apply bexp_eval_true. assumption.
+  + apply bexp_eval_false in H5.
+    apply H0. split; assumption.
+Qed.
 
 (** For full credit, prove formally [hoare_if1_good] that your rule is
     precise enough to show the following valid Hoare triple:
@@ -1311,7 +1339,15 @@ Lemma hoare_if1_good :
     X ::= X + Y
   FI)%imp
   {{ fun st => st X = st Z }}.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. 
+  apply hoare_if1. 
+  + intros st st' HC [Hst Hb]. inversion HC; subst.
+    unfold t_update, aeval. simpl. assumption.
+  + intros st [Hst Hb]. unfold bassn, beval, aeval in Hb. 
+    apply not_true_iff_false, negb_false_iff, eqb_eq in Hb.
+    rewrite Hb in Hst. rewrite <- plus_n_O in Hst.
+    assumption.
+Qed.
 
 End If1.
 
