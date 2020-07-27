@@ -993,7 +993,13 @@ Example hoare_asgn_example4 :
   X ::= 1;; Y ::= 2
   {{fun st => st X = 1 /\ st Y = 2}}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eapply hoare_seq.
+  - eapply hoare_asgn. 
+  - eapply hoare_consequence_pre. apply hoare_asgn.
+    intros st H. unfold assn_sub. simpl. split.
+    + apply t_update_neq. unfold not. intros. inversion H0.
+    + apply t_update_eq.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (swap_exercise)  
@@ -1009,15 +1015,28 @@ Proof.
     your proof will want to start at the end and work back to the
     beginning of your program.)  *)
 
-Definition swap_program : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition swap_program : com :=
+  ( Z ::= X ;;
+    X ::= Y ;;
+    Y ::= Z )%imp.
 
 Theorem swap_exercise :
   {{fun st => st X <= st Y}}
   swap_program
   {{fun st => st Y <= st X}}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold swap_program. eapply hoare_seq.
+  eapply hoare_seq.
+  + apply hoare_asgn.
+  + apply hoare_asgn.
+  + eapply hoare_consequence_pre. eapply hoare_asgn.
+    intros st H. unfold assn_sub. simpl.
+    rewrite t_update_eq. 
+    rewrite t_update_neq; try discriminate.
+    rewrite t_update_eq. rewrite t_update_neq; try discriminate.
+    rewrite t_update_eq. rewrite t_update_neq; try discriminate.
+    apply H.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (hoarestate1)  
@@ -1030,7 +1049,9 @@ Proof.
          {{fun st => st Y = n}}.
 *)
 
-(* FILL IN HERE *)
+(* (aeval st a) may involve X, in which case after X ::= 3, the 
+    precondition may not hold anymore, i.e. we may have 
+     (aeval st a = n') /\ n <> n' *)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_hoarestate1 : option (nat*string) := None.
