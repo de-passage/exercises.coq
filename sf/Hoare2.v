@@ -1148,7 +1148,14 @@ Qed.
 Theorem hoare_asgn_weakest : forall Q X a,
   is_wp (Q [X |-> a]) (X ::= a) Q.
 Proof.
-(* FILL IN HERE *) Admitted.
+ unfold is_wp. split.
+ + apply hoare_asgn.
+ + intros P c st HP. unfold assn_sub.
+   unfold hoare_triple in c. 
+   assert (st =[ X ::= a ]=> (X !-> aeval st a; st)).
+   { apply E_Ass. reflexivity. }
+   apply c in H; assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced, optional (hoare_havoc_weakest)  
@@ -1162,7 +1169,12 @@ Lemma hoare_havoc_weakest : forall (P Q : Assertion) (X : string),
   {{ P }} HAVOC X {{ Q }} ->
   P ->> havoc_pre X Q.
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros. intros st P'. unfold havoc_pre. intros n.
+  unfold assn_sub. 
+  assert (st =[ HAVOC X ]=> (X !-> aeval st n; st)).
+  apply E_Havoc. apply H in H0. apply H0 in P'. assumption.
+Qed.
+
 End Himp2.
 (** [] *)
 
@@ -2054,11 +2066,25 @@ Qed.
     decorated program and prove it correct. *)
 
 Example slow_assignment_dec (m : nat) : decorated
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+    := 
+  {{ fun st => st X = m }} ->>
+  {{ fun st => st X + 0 = m }}
+   Y ::= 0
+    {{ fun st => st X + st Y = m }};;
+  WHILE ~(X = 0) DO
+      {{ fun st => st X + st Y = m /\ st X <> 0 }} ->> 
+      {{ fun st => (st X - 1) + (st Y + 1) = m }}
+    X ::= X - 1
+      {{ fun st => st X + (st Y + 1) = m }};;
+    Y ::= Y + 1
+      {{ fun st => st X + st Y = m }}
+  END
+    {{ fun st => st X + st Y = m /\ st X = 0 }} ->>
+    {{ fun st => st Y = m }}.
 
 Theorem slow_assignment_dec_correct : forall m,
   dec_correct (slow_assignment_dec m).
-Proof. (* FILL IN HERE *) Admitted.
+Proof. intros. verify. Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_check_defn_of_slow_assignment_dec : option (nat*string) := None.
@@ -2078,7 +2104,33 @@ Fixpoint real_fact (n : nat) : nat :=
     program [factorial_dec] that implements the factorial function and
     prove it correct as [factorial_dec_correct]. *)
 
-(* FILL IN HERE *)
+Definition factorial_dec (m: nat): decorated :=
+    {{ fun st => st X = m }} ->>
+    {{ fun st => 1 * (real_fact (st X)) = real_fact m }}
+  Y ::= 1
+    {{ fun st => st Y * (real_fact (st X)) = real_fact m }};;
+  WHILE ~(X = 0)
+  DO   
+    {{ fun st => st Y * real_fact (st X) = real_fact m /\ st X <> 0 }} ->>
+       {{ fun st => (st Y * st X) * real_fact (st X - 1) = real_fact m }}
+     Y ::= Y * X
+       {{ fun st => st Y * real_fact (st X - 1) = real_fact m  }};;
+     X ::= X - 1
+       {{ fun st => st Y * real_fact (st X) = real_fact m }}
+  END
+    {{ fun st => st Y * real_fact (st X) = real_fact m /\ st X = 0 }} ->>
+    {{ fun st => st Y = real_fact m }}
+  .
+Theorem factorial_dec_correct : forall m,
+  dec_correct (factorial_dec m).
+Proof. 
+  intros. verify.
+  - destruct (st X). contradiction H0. reflexivity.
+    simpl. rewrite <- minus_n_O. rewrite <- mult_assoc.
+    replace (S n * real_fact n) with (real_fact (S n)) by reflexivity.
+    assumption.
+  - simpl in H. rewrite mult_1_r in H. assumption.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_factorial_dec : option (nat*string) := None.
