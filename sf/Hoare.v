@@ -1902,13 +1902,23 @@ Theorem assert_assume_differ : exists P b Q,
        ({{P}} ASSUME b {{Q}})
   /\ ~ ({{P}} ASSERT b {{Q}}).
 Proof.
-(* FILL IN HERE *) Admitted.
+ exists (fun _ => True), BFalse, (fun _ => True).
+ split. intros st st' Hc Hst. inversion Hc; subst.
+ exists st. split; auto.
+ unfold not. intros. unfold hoare_triple in H.
+ destruct H with empty_st RError. apply E_AssertFalse. reflexivity.
+ apply I. destruct H0. inversion H0.
+Qed.
+ 
 
 Theorem assert_implies_assume : forall P b Q,
      ({{P}} ASSERT b {{Q}})
   -> ({{P}} ASSUME b {{Q}}).
 Proof.
-(* FILL IN HERE *) Admitted.
+  unfold hoare_triple. intros. apply H with st. 
+  inversion H0; subst. apply E_AssertTrue. assumption.
+  assumption.
+Qed.
 
 (** Your task is now to state Hoare rules for [ASSERT] and [ASSUME],
     and use them to prove a simple program correct.  Name your hoare
@@ -1971,7 +1981,25 @@ Qed.
 (** State and prove your hoare rules, [hoare_assert] and
     [hoare_assume], below. *)
 
-(* FILL IN HERE *)
+Theorem hoare_assert: forall P b,
+  {{ fun st => P st /\ bassn b st }} 
+  ASSERT b 
+  {{ fun st => P st /\ bassn b st }}.
+Proof.
+  intros. intros st r Hc HP. inversion Hc; subst.
+  exists st. split. reflexivity. assumption.
+  destruct HP. unfold bassn in H1. rewrite H1 in H0.
+  inversion H0.
+Qed.
+
+Theorem hoare_assume: forall P b,
+  {{ P }}
+  ASSUME b
+  {{ fun st => P st /\ bassn b st }}.
+Proof. 
+  intros P b st r Hc HP. inversion Hc; subst.
+  exists st. split; split || assumption; assumption.
+Qed.
 
 (** Here are the other proof rules (sanity check) *)
 Theorem hoare_skip : forall P,
@@ -2035,7 +2063,17 @@ Example assert_assume_example:
   ASSERT (X = 2)
   {{fun st => True}}.
 Proof.
-(* FILL IN HERE *) Admitted.
+  eapply hoare_seq. eapply hoare_seq.
+  - apply hoare_consequence_post with (fun st => True /\ bassn (X = 2) st).
+    apply hoare_assert. intros st. split.
+  - apply hoare_consequence_post with (fun st => st X = 2).
+    apply hoare_asgn.
+    intros st. split. apply I. unfold bassn, beval, aeval.
+    apply eqb_eq. assumption.
+  - eapply hoare_consequence_post. eapply hoare_assume.
+    intros st [I He]. unfold assn_sub, t_update, aeval. simpl.
+    unfold bassn, beval, aeval in He. apply eqb_eq in He. omega.
+Qed. 
 
 End HoareAssertAssume.
 (** [] *)
