@@ -2165,7 +2165,10 @@ Lemma fib_eqn : forall n,
   n > 0 ->
   fib n + fib (Init.Nat.pred n) = fib (n + 1).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. induction n. inversion H.
+  rewrite add_1_r. reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced, optional (fib)  
@@ -2191,12 +2194,54 @@ Proof.
 
 Definition T : string := "T".
                       
-Definition dfib (n : nat) : decorated
-(* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition dfib (n : nat) : decorated :=
+  {{ fun _ => True }} ->>
+  {{ fun _ => 1 + 1 = fib 2 
+      /\ 1 = fib (pred (1)) /\ 1 = fib 1 }}
+  X ::= 1
+  {{ fun st => 1 + 1 = fib (st X + 1) 
+      /\ 1 = fib (pred (st X)) /\ 1 = fib (st X) }};;
+  Y ::= 1
+  {{ fun st => st Y + 1 = fib (st X + 1) 
+      /\ st Y = fib (pred (st X)) /\ 1 = fib (st X) }};;
+  Z ::= 1
+  {{ fun st => st Z + st Y = fib (st X + 1) 
+      /\ st Y = fib (pred (st X)) /\ st Z = fib (st X)}};;
+  WHILE ~(X = n + 1) DO
+    {{ fun st => st Z + st Y = fib (st X + 1) /\ st Z = fib (st X) 
+        /\ st Y = fib (pred (st X)) /\ ~(st X = n + 1) }} ->>
+    {{ fun st => st Z + st Z + st Y = fib (st X + 2)
+        /\ st Z = fib (pred (st X + 1)) /\ st Z + st Y = fib (st X + 1) }}
+    T ::= Z
+    {{ fun st => st T + st Z + st Y = fib (st X + 2)
+        /\ st T = fib (pred (st X + 1)) /\ st Z + st Y = fib (st X + 1) }};;
+    Z ::= Z + Y
+    {{ fun st => st T + st Z = fib (st X + 2)
+        /\ st T = fib (pred (st X + 1)) /\ st Z = fib (st X + 1)}};;
+    Y ::= T
+    {{ fun st => st Y + st Z = fib (st X + 2) 
+        /\ st Y = fib (pred (st X + 1)) /\ st Z = fib (st X + 1) }};;
+    X ::= X + 1
+    {{ fun st => st Y + st Z = fib (st X + 1) 
+        /\ st Y = fib (pred (st X)) /\ st Z = fib (st X) }}
+  END
+  {{ fun st => st Y + st Z = fib (st X + 1) 
+      /\ st Y = fib (pred (st X)) /\ st Z = fib (st X) 
+      /\ st X = n + 1}} ->>
+  {{ fun st => st Y = fib n }}.
 
 Theorem dfib_correct : forall n,
   dec_correct (dfib n).
-(* FILL IN HERE *) Admitted.
+Proof. 
+  intros. verify.
+  + rewrite <- plus_assoc, H, plus_comm. 
+    replace (fib (st X)) with (fib (pred (st X + 1))).
+    rewrite fib_eqn. rewrite <- plus_assoc. reflexivity.
+    omega. rewrite add_1_r, pred_succ. reflexivity.
+  + rewrite add_1_r, pred_succ. reflexivity.
+  + rewrite <- plus_assoc. apply H.
+  + rewrite add_1_r, pred_succ. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 5 stars, advanced, optional (improve_dcom)  
