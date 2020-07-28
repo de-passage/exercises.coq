@@ -2,14 +2,14 @@
 
 Set Warnings "-notation-overridden,-parsing".
 From Coq Require Import Strings.String.
-From PLF Require Import Maps.
+From LF Require Import Maps.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Arith.Arith.
 From Coq Require Import Arith.EqNat.
 From Coq Require Import Arith.PeanoNat. Import Nat.
 From Coq Require Import omega.Omega.
 From PLF Require Import Hoare.
-From PLF Require Import Imp.
+From LF Require Import Imp.
 
 (* ################################################################# *)
 (** * Decorated Programs *)
@@ -255,15 +255,15 @@ These decorations were constructed as follows:
 
        {{ True }}
       TEST X <= Y THEN
-          {{                         }} ->>
-          {{                         }}
+          {{ True /\ X <= Y }} ->>
+          {{ Y = X + (Y - X) }}
         Z ::= Y - X
-          {{                         }}
+          {{ Y = X + Z }}
       ELSE
-          {{                         }} ->>
-          {{                         }}
+          {{ True /\ Y < X }} ->>
+          {{ X + Z = X + Z }}
         Y ::= X + Z
-          {{                         }}
+          {{ Y = X + Z }}
       FI
         {{ Y = X + Z }}
 *)
@@ -570,7 +570,23 @@ Proof.
     Write an informal decorated program showing that this procedure
     is correct. *)
 
-(* FILL IN HERE *)
+(* Help from above, observing that X increase at the same pace Y 
+   decreases, until X = 0. i.e X + Y = m 
+    {{ X = m }} ->>
+    {{ X + 0 = m }}
+   Y :: = 0;;
+    {{ X + Y = m }}
+  WHILE ~(X = 0) DO
+      {{ X + Y = m /\ X <> 0 }} ->> 
+      {{ (X - 1) + (Y + 1) = m }}
+    X ::= X - 1;;
+      {{ X + (Y + 1) = m }}
+    Y ::= Y + 1;;
+      {{ X + Y = m }}
+  END
+    {{ X + Y = m /\ X = 0 }} ->>
+    {{ Y = m }}
+*)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_decorations_in_slow_assignment : option (nat*string) := None.
@@ -594,7 +610,19 @@ Definition manual_grade_for_decorations_in_slow_assignment : option (nat*string)
     specification of [add_slowly]; then (informally) decorate the
     program accordingly. *)
 
-(* FILL IN HERE 
+(* 
+  {{ X = m /\ Z = n }} ->>
+  {{ Z + X = n + m}}
+  WHILE ~(X = 0) DO
+    {{ Z + X = n + m /\ X <> 0 }} ->>
+    {{ Z + 1 + (X - 1) = n + m }}
+    Z ::= Z + 1;;
+    {{ Z + (X - 1) = n + m }}
+    X ::= X - 1
+    {{ Z + X = n + m }}
+  END
+  {{ Z + X = n + m /\ X = 0 }} ->>
+  {{ Z = n + m }}
 
     [] *)
 
@@ -676,7 +704,20 @@ Theorem parity_correct : forall m,
   END
     {{ fun st => st X = parity m }}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros m.
+  apply hoare_consequence with 
+  (fun st => parity (st X) = parity m)
+  (fun st => parity (st X) = parity m /\ ~ bassn (2 <= X) st).
+  apply hoare_while.
+  - eapply hoare_consequence_pre. apply hoare_asgn.
+    intros st [Hm He]. unfold assn_sub. rewrite t_update_eq. simpl.
+    unfold bassn, beval, aeval in He. apply leb_iff in He. 
+    rewrite <- Hm. apply parity_ge_2. assumption.
+  - intros st Hst. rewrite Hst. reflexivity.
+  - intros st [Hst He]. rewrite <- Hst. symmetry.
+    apply parity_lt_2. unfold bassn, beval, aeval in He. 
+    rewrite not_true_iff_false in He. apply leb_nle in He. assumption.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
