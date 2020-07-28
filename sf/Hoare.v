@@ -1577,8 +1577,15 @@ Inductive ceval : state -> com -> state -> Prop :=
       st  =[ c ]=> st' ->
       st' =[ WHILE b DO c END ]=> st'' ->
       st  =[ WHILE b DO c END ]=> st''
-(* FILL IN HERE *)
-
+  | E_RepeatTrue : forall b st st' c,
+      beval st' b = true ->
+      st =[ c ]=> st' ->
+      st =[ REPEAT c UNTIL b END ]=> st'
+  | E_RepeatFalse : forall b st st' st'' c,
+      beval st' b = false -> 
+      st =[ REPEAT c UNTIL b END ]=> st' ->
+      st' =[ c ]=> st'' ->
+      st =[ REPEAT c UNTIL b END ]=> st''
 where "st '=[' c ']=>' st'" := (ceval st c st').
 
 (** A couple of definitions from above, copied here so they use the
@@ -1603,13 +1610,28 @@ Definition ex1_repeat :=
 Theorem ex1_repeat_works :
   empty_st =[ ex1_repeat ]=> (Y !-> 1 ; X !-> 1).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eapply E_RepeatTrue. reflexivity.
+  eapply E_Seq. eapply E_Ass. reflexivity. eapply E_Ass. reflexivity.
+Qed.
 
 (** Now state and prove a theorem, [hoare_repeat], that expresses an
     appropriate proof rule for [repeat] commands.  Use [hoare_while]
     as a model, and try to make your rule as precise as possible. *)
 
-(* FILL IN HERE *)
+Theorem hoare_repeat: forall P b c,
+  {{P}} c {{P}} -> 
+  {{P}} (REPEAT c UNTIL b END) {{fun st => P st /\ bassn b st}}.
+Proof.
+  intros. intros st st' Hc HP. 
+  remember (REPEAT c UNTIL b END)%imp eqn:R.
+  induction Hc; try discriminate; inversion R; subst.
+  - split.
+    + apply (H st st'); assumption.
+    + unfold bassn. assumption.
+  - apply IHHc1 in R as [HPst' Hbst']; try assumption.
+    unfold bassn in Hbst'. rewrite Hbst' in H0.
+    discriminate H0.
+Qed.
 
 (** For full credit, make sure (informally) that your rule can be used
     to prove the following valid Hoare triple:
@@ -1621,7 +1643,6 @@ Proof.
   UNTIL X = 0 END
   {{ X = 0 /\ Y > 0 }}
 *)
-
 End RepeatExercise.
 
 (* Do not modify the following line: *)
@@ -1742,13 +1763,15 @@ Notation "{{ P }}  c  {{ Q }}" := (hoare_triple P c Q)
 (** Complete the Hoare rule for [HAVOC] commands below by defining
     [havoc_pre] and prove that the resulting rule is correct. *)
 
-Definition havoc_pre (X : string) (Q : Assertion) : Assertion
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition havoc_pre (X : string) (Q : Assertion) : Assertion :=
+  fun st => forall n, Q [ X |-> n ] st.
 
 Theorem hoare_havoc : forall (Q : Assertion) (X : string),
   {{ havoc_pre X Q }} HAVOC X {{ Q }}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. unfold havoc_pre, assn_sub. intros st st' c Hst.
+  inversion c; subst. apply (Hst n).
+Qed.
 
 End Himp.
 (** [] *)
