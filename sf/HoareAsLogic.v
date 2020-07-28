@@ -18,7 +18,7 @@
     the [ProofObjects] chapter in _Logical
     Foundations_ (_Software Foundations_, volume 1). *)
 
-From PLF Require Import Imp.
+From LF Require Import Imp.
 From PLF Require Import Hoare.
 
 (* ################################################################# *)
@@ -110,7 +110,15 @@ Print sample_proof.
 Theorem hoare_proof_sound : forall P c Q,
   hoare_proof P c Q -> {{P}} c {{Q}}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. induction X.
+  + apply hoare_skip.
+  + apply hoare_asgn.
+  + eapply hoare_seq; eassumption.
+  + apply hoare_if; assumption. 
+  + apply hoare_while. assumption.
+  + intros st st' Hc HP. apply p in HP. apply IHX in Hc.
+    apply Hc, q in HP. assumption.
+Qed.
 (** [] *)
 
 (** We can also use Coq's reasoning facilities to prove metatheorems
@@ -218,14 +226,19 @@ Definition wp (c:com) (Q:Assertion) : Assertion :=
 
 Lemma wp_is_precondition: forall c Q,
   {{wp c Q}} c {{Q}}.
-(* FILL IN HERE *) Admitted.
+Proof. 
+  unfold wp. intros. intros st st' Hc H.
+  apply H. assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard (wp_is_weakest)  *)
 
 Lemma wp_is_weakest: forall c Q P',
    {{P'}} c {{Q}} -> forall st, P' st -> wp c Q st.
-(* FILL IN HERE *) Admitted.
+Proof.
+  unfold wp. intros. apply H in H1. apply H1 in H0. assumption.
+Qed.
 
 (** The following utility lemma will also be useful. *)
 
@@ -262,7 +275,25 @@ Proof.
        intros st st' E1 H. unfold wp. intros st'' E2.
          eapply HT. econstructor; eassumption. assumption.
      eapply IHc2. intros st st' E1 H. apply H; assumption.
-  (* FILL IN HERE *) Admitted.
+  - apply H_If.
+    + apply IHc1. intros st st' Hc [Hp Hb]. eapply HT.
+      apply E_IfTrue; eassumption. assumption.
+    + apply IHc2. intros st st' Hc [Hp Hb]. eapply HT.
+      apply E_IfFalse. apply bassn_eval_false in Hb. 
+      eassumption. assumption. assumption.
+  - pose (I := wp (WHILE b DO c END)%imp Q). 
+    eapply H_Consequence with (P' := I) 
+      (Q' := fun s => I s /\ ~ bassn b s). 
+    eapply H_While. apply IHc. intros st st' Hc [Hi Hb]. unfold wp in I.
+    subst I. simpl in *. intros st'' H. eapply Hi. eapply E_WhileTrue.
+    apply Hb. apply Hc. apply H.
+    intros st HP. subst I; simpl in *. unfold wp. intros s' Hst.
+    unfold hoare_triple in HT. apply HT in Hst; assumption.
+    subst I; simpl. unfold wp. intros st [HI Hb].
+    eapply HI. apply E_WhileFalse.
+    apply bassn_eval_false in Hb. assumption.
+Qed.
+
 (** [] *)
 
 (** Finally, we might hope that our axiomatic Hoare logic is
