@@ -883,18 +883,18 @@ Qed.
     well-defined on natural numbers.
 
     {{ X = m }} ->>
-    {{                                      }}
+    {{ 1 * X! = m! }}
   Y ::= 1;;
-    {{                                      }}
+    {{ Y * X! = m! }}
   WHILE ~(X = 0)
-  DO   {{                                      }} ->>
-       {{                                      }}
+  DO   {{ Y * X! = m! /\ X <> 0 }} ->>
+       {{ (Y * X) * (X - 1)! = m! }}
      Y ::= Y * X;;
-       {{                                      }}
+       {{ Y * (X - 1)! = m!  }}
      X ::= X - 1
-       {{                                      }}
+       {{ Y * X! = m! }}
   END
-    {{                                      }} ->>
+    {{ Y * X! = m! /\ X = 0 }} ->>
     {{ Y = m! }}
 *)
 
@@ -927,25 +927,25 @@ Definition manual_grade_for_decorations_in_factorial : option (nat*string) := No
   plus standard high-school algebra, as always.
 
   {{ True }} ->>
-  {{                    }}
+  {{ min a b = min a b }}
   X ::= a;;
-  {{                       }}
+  {{ min X b = min a b }}
   Y ::= b;;
-  {{                       }}
+  {{ min X Y = min a b }}
   Z ::= 0;;
-  {{                       }}
+  {{ Z + min X Y = min a b }}
   WHILE ~(X = 0) && ~(Y = 0) DO
-  {{                                     }} ->>
-  {{                                }}
+  {{ Z + min X Y = min a b /\ X <> 0 /\ Y <> 0 }} ->>
+  {{ Z + 1 + (min (X - 1) (Y - 1)) = min a b }} using lemma 2
   X := X - 1;;
-  {{                            }}
+  {{ Z + 1 + (min X (Y - 1)) = min a b }}
   Y := Y - 1;;
-  {{                        }}
+  {{ Z + 1 + min X Y = min a b }}
   Z := Z + 1
-  {{                       }}
+  {{ Z + min X Y = min a b }}
   END
-  {{                            }} ->>
-  {{ Z = min a b }}
+  {{ Z + (min X Y) = min a b /\ (X = 0 \/ Y = 0) }} ->>
+  {{ Z = min a b }} using lemma 1
 *)
 
 (* Do not modify the following line: *)
@@ -972,32 +972,32 @@ Definition manual_grade_for_decorations_in_Min_Hoare : option (nat*string) := No
     following decorated program.
 
       {{ True }} ->>
-      {{                                        }}
+      {{ c = c + 0 }}
     X ::= 0;;
-      {{                                        }}
+      {{ c = c + X + 0 }}
     Y ::= 0;;
-      {{                                        }}
+      {{ c = c + X + Y }}
     Z ::= c;;
-      {{                                        }}
+      {{ Z = c + X + Y }}
     WHILE ~(X = a) DO
-        {{                                        }} ->>
-        {{                                        }}
+        {{ Z = c + X + Y }} ->>
+        {{ (Z + 1) = c + (X + 1) + Y }}
       X ::= X + 1;;
-        {{                                        }}
+        {{ (Z + 1) = c + X + Y }}
       Z ::= Z + 1
-        {{                                        }}
+        {{ Z = c + X + Y }}
     END;;
-      {{                                        }} ->>
-      {{                                        }}
+      {{ Z = c + X + Y /\ X = a }} ->>
+      {{ Z = c + a + Y }}
     WHILE ~(Y = b) DO
-        {{                                        }} ->>
-        {{                                        }}
+        {{ Z = c + a + Y /\ Y <> b }} ->>
+        {{ Z + 1 = c + a + (Y + 1) }}
       Y ::= Y + 1;;
-        {{                                        }}
+        {{ Z + 1 = c + a + Y }}
       Z ::= Z + 1
-        {{                                        }}
+        {{ Z = c + a + Y }}
     END
-      {{                                        }} ->>
+      {{ Z = c + a + Y /\ Y = b }} ->>
       {{ Z = a + b + c }}
 *)
 
@@ -1024,8 +1024,28 @@ Definition manual_grade_for_decorations_in_two_loops : option (nat*string) := No
 
     Write a decorated program for this. *)
 
-(* FILL IN HERE 
-
+(*
+    {{ True }} ->> 
+    {{ 1 = 1 * 2 - 1 /\ 1 = 2 ^ 0 }}
+    X ::= 0;;
+    {{ 1 = 1 * 2 - 1 /\ 1 = 2 ^ X }}
+    Y ::= 1;;
+    {{ Y = 1 * 2 - 1 /\ 1 = 2 ^ X }}
+    Z ::= 1;;
+    {{ Y = Z * 2 - 1 /\ Z = 2 ^ X }}
+    WHILE ~(X = m) DO
+    {{ Y = Z * 2 - 1 /\ Z = 2 ^ X /\ X <> m }} ->>
+    {{ Y + (2 * Z) = (Z * 2) - 1 + (2 * Z) /\ Z * 2 = 2 ^ X * 2}} ->>
+    {{ Y + (2 * Z) = (2 * Z * 2) - 1 /\ (2 * Z) = 2 ^ (X + 1)}}
+      Z ::= 2 * Z;;
+      {{ Y + Z = Z * 2 - 1 /\ Z = 2 ^ (X + 1) }}
+      Y ::= Y + Z;;
+      {{ Y = Z * 2 - 1 /\ Z = 2 ^ (X + 1)}}
+      X ::= X + 1
+    {{ Y = Z * 2 - 1 /\ Z = 2 ^ X }}
+    END
+    {{ Y = Z * 2 - 1 /\ Z = 2 ^ X /\ X = m}} ->
+    {{ Y = 2 ^ (m + 1) - 1 }}
     [] *)
 
 (* ################################################################# *)
@@ -1077,21 +1097,21 @@ Definition is_wp P c Q :=
     What are the weakest preconditions of the following commands
    for the following postconditions?
 
-  1) {{ ? }}  SKIP  {{ X = 5 }}
+  1) {{ X = 5 }}  SKIP  {{ X = 5 }}
 
-  2) {{ ? }}  X ::= Y + Z {{ X = 5 }}
+  2) {{ Y + Z = 5 }}  X ::= Y + Z {{ X = 5 }}
 
-  3) {{ ? }}  X ::= Y  {{ X = Y }}
+  3) {{ True }}  X ::= Y  {{ X = Y }}
 
-  4) {{ ? }}
+  4) {{ (X = 0 /\ Z = 4) \/ (X <> 0 /\ W = 3) }}
      TEST X = 0 THEN Y ::= Z + 1 ELSE Y ::= W + 2 FI
      {{ Y = 5 }}
 
-  5) {{ ? }}
+  5) {{ False }}
      X ::= 5
      {{ X = 0 }}
 
-  6) {{ ? }}
+  6) {{ True }}
      WHILE true DO X ::= 0 END
      {{ X = 0 }}
 *)
@@ -1109,7 +1129,15 @@ Theorem is_wp_example :
   is_wp (fun st => st Y <= 4)
     (X ::= Y + 1) (fun st => st X <= 5).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold is_wp. split.
+  + eapply hoare_consequence_pre. apply hoare_asgn. intros st HY.
+    unfold assn_sub, t_update, aeval; simpl. omega.
+  + intros P' H st HP'. unfold hoare_triple in H.
+    assert (st =[ X ::= Y + 1]=> (X !-> (st Y + 1); st)).
+    { apply E_Ass. reflexivity. }
+    apply H in H0. rewrite t_update_eq in H0. omega.
+    assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced, optional (hoare_asgn_weakest)  
