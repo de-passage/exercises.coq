@@ -757,7 +757,13 @@ Definition bool_step_prop2 :=
   -->
      tru.
 
-(* FILL IN HERE *)
+(* unprovable *)
+
+Theorem unprovable_bool_step_prop2:
+  ~bool_step_prop2.
+Proof. 
+  intros contra. inversion contra.
+Qed.
 
 Definition bool_step_prop3 :=
      test
@@ -770,7 +776,13 @@ Definition bool_step_prop3 :=
        (test tru tru tru)
        fls.
 
-(* FILL IN HERE *)
+(* provable *)
+
+Theorem provable_bool_step_prop3: 
+  bool_step_prop3.
+Proof.
+  apply ST_If. apply ST_IfTrue.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_smallstep_bools : option (nat*string) := None.
@@ -784,14 +796,45 @@ Definition manual_grade_for_smallstep_bools : option (nat*string) := None.
 Theorem strong_progress : forall t,
   value t \/ (exists t', t --> t').
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros t. induction t; (left; constructor) || right.
+  destruct IHt1. 
+  - inversion H; subst. 
+    + exists t2. apply ST_IfTrue.
+    + exists t3. apply ST_IfFalse.
+  - destruct H as [t' H]. exists (test t' t2 t3).
+    apply ST_If. apply H.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (step_deterministic)  *)
 Theorem step_deterministic :
   deterministic step.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold deterministic. intros x y1. generalize dependent x.
+  induction y1; intros.
+  -  destruct y2. 
+    + reflexivity.
+    + inversion H; subst. inversion H0; subst. inversion H0; subst.
+    + inversion H; subst. inversion H0; subst; inversion H2. 
+      inversion H0; subst. inversion H2.
+  - inversion H; subst. inversion H0; subst. reflexivity. inversion H5.
+    inversion H0; subst. reflexivity. inversion H5.
+  - destruct y2.
+    + inversion H0; subst. 
+      * inversion H; subst. inversion H2.
+      * inversion H; subst. inversion H2.
+    + inversion H0; subst.
+      * inversion H; subst. inversion H2.
+      * inversion H; subst. inversion H2.
+    + inversion H0; subst.
+      * inversion H; subst. reflexivity. inversion H2.
+      * inversion H; subst. reflexivity. inversion H2.
+      * inversion H; subst. inversion H3. inversion H3.
+        assert (y1_1 = y2_1). eapply IHy1_1. apply H2. apply H3. subst. 
+        reflexivity.
+Qed.
+
 (** [] *)
 
 Module Temp5.
@@ -827,7 +870,8 @@ Inductive step : tm -> tm -> Prop :=
   | ST_If : forall t1 t1' t2 t3,
       t1 --> t1' ->
       test t1 t2 t3 --> test t1' t2 t3
-  (* FILL IN HERE *)
+  | ST_ShortCircuit : forall t1 t2,
+      test t1 t2 t2 --> t2
 
   where " t '-->' t' " := (step t t').
 
@@ -842,7 +886,8 @@ Definition bool_step_prop4 :=
 Example bool_step_prop4_holds :
   bool_step_prop4.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply ST_ShortCircuit.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (properties_of_altered_step)  
@@ -855,22 +900,40 @@ Proof.
     - Is the [step] relation still deterministic?  Write yes or no and
       briefly (1 sentence) explain your answer.
 
-      Optional: prove your answer correct in Coq. *)
+      YES.
+      Because it was deterministic and for all x matching ST_ShortCircuit, 
+      the step result is entirely determined by the step input.
 
-(* FILL IN HERE 
+      Optional: prove your answer correct in Coq. *)
+  
+(*  
    - Does a strong progress theorem hold? Write yes or no and
      briefly (1 sentence) explain your answer.
 
      Optional: prove your answer correct in Coq.
+
+     YES, the last case doesn't substract from what's already 
+     possible with the previous definition.
 *)
 
-(* FILL IN HERE 
+Theorem strong_progress_step: forall t,
+  value t \/ (exists t', t --> t').
+Proof.
+  intros. induction t; (left; constructor) || right.
+  destruct IHt1 as [H|[t' H]]. 
+  - inversion H. exists t2. apply ST_IfTrue. exists t3. apply ST_IfFalse.
+  - exists (test t' t2 t3). apply ST_If. assumption.
+Qed.
+
+
+(* 
    - In general, is there any way we could cause strong progress to
      fail if we took away one or more constructors from the original
      step relation? Write yes or no and briefly (1 sentence) explain
      your answer.
 
-(* FILL IN HERE *)
+    Yes, take away constructors such as there is no chain from a given 
+    state to a value.
 
     [] *)
 
@@ -1018,7 +1081,8 @@ Qed.
 Lemma test_multistep_2:
   C 3 -->* C 3.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply multi_refl.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard, optional (test_multistep_3)  *)
@@ -1027,7 +1091,8 @@ Lemma test_multistep_3:
    -->*
       P (C 0) (C 3).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply multi_refl.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard (test_multistep_4)  *)
@@ -1042,7 +1107,12 @@ Lemma test_multistep_4:
         (C 0)
         (C (2 + (0 + 3))).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eapply multi_step. 
+  + apply ST_Plus2. apply v_const. apply ST_Plus2. apply v_const.
+    apply ST_PlusConstConst.
+  + eapply multi_step. apply ST_Plus2. apply v_const. apply ST_PlusConstConst.
+    apply multi_refl.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
