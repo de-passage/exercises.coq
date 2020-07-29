@@ -747,7 +747,13 @@ Inductive step : tm -> tm -> Prop :=
 Definition bool_step_prop1 :=
   fls --> fls.
 
-(* FILL IN HERE *)
+(* Unprovable *)
+
+Theorem unprovable_bool_step_prop1:
+  ~bool_step_prop1.
+Proof.
+  intros contra. inversion contra.
+Qed. 
 
 Definition bool_step_prop2 :=
      test
@@ -901,8 +907,9 @@ Qed.
       briefly (1 sentence) explain your answer.
 
       YES.
-      Because it was deterministic and for all x matching ST_ShortCircuit, 
-      the step result is entirely determined by the step input.
+      Because ST_ShortCircuit, yields the same result as ST_IfTrue and 
+      ST_IfFalse in all cases, and the previous relationship was 
+      deterministic.
 
       Optional: prove your answer correct in Coq. *)
   
@@ -1143,7 +1150,15 @@ Proof.
   inversion P1 as [P11 P12]; clear P1.
   inversion P2 as [P21 P22]; clear P2.
   generalize dependent y2.
-  (* FILL IN HERE *) Admitted.
+  induction P11.
+  + intros. induction P21. reflexivity. 
+    exfalso. apply P12. exists y. apply H.
+  + intros. apply IHP11; try assumption.
+    inversion P21; subst. exfalso. apply P22. exists y. apply H.
+    assert (y0 = y). {
+      destruct step_deterministic with x y0 y; trivial.
+    } subst. assumption.
+Qed.
 (** [] *)
 
 (** Indeed, something stronger is true for this language (though not
@@ -1181,7 +1196,11 @@ Lemma multistep_congr_2 : forall t1 t2 t2',
      t2 -->* t2' ->
      P t1 t2 -->* P t1 t2'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros t1 t2 t2' Hv H. induction H.
+  + apply multi_refl.
+  + apply multi_step with (P t1 y). apply ST_Plus2; assumption.
+    assumption.
+Qed.
 (** [] *)
 
 (** With these lemmas in hand, the main proof is a straightforward
@@ -1290,7 +1309,17 @@ Theorem eval__multistep : forall t n,
     includes [-->]. *)
 
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. induction H.
+  + apply multi_refl.
+  + inversion IHeval1; subst.
+    - eapply multi_trans. apply multistep_congr_2. apply v_const.
+      apply IHeval2. eapply multi_step. apply ST_PlusConstConst.
+      apply multi_refl.
+    - eapply multi_trans. eapply multistep_congr_1. apply IHeval1.
+      eapply multi_trans. eapply multistep_congr_2. apply v_const.
+      apply IHeval2. eapply multi_step. apply ST_PlusConstConst.
+      apply multi_refl.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (eval__multistep_inf)  
@@ -1314,7 +1343,13 @@ Lemma step__eval : forall t t' n,
      t  ==> n.
 Proof.
   intros t t' n Hs. generalize dependent n.
-  (* FILL IN HERE *) Admitted.
+  induction Hs.
+  + intros. inversion H; subst. apply E_Plus; apply E_Const.
+  + intros. inversion H; subst. apply E_Plus; try assumption.
+    apply IHHs. assumption.
+  + intros. inversion H; subst. inversion H0; subst. 
+    apply E_Plus; try assumption. apply IHHs. assumption.
+Qed.
 (** [] *)
 
 (** The fact that small-step reduction implies big-step evaluation is
@@ -1330,7 +1365,13 @@ Proof.
 Theorem multistep__eval : forall t t',
   normal_form_of t t' -> exists n, t' = C n /\ t ==> n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold normal_form_of. intros t t' [Hst Hn].
+  induction Hst. 
+  + rewrite nf_same_as_value in Hn. inversion Hn.
+    exists n. split; auto. constructor.
+  + apply IHHst in Hn as [n [Hz Hbs]]. exists n. split; auto.
+    eapply step__eval; eassumption.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
