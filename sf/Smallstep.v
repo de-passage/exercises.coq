@@ -198,7 +198,8 @@ Example test_step_2 :
           (C 2)
           (C (0 + 3))).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply ST_Plus2. apply ST_Plus2. apply ST_PlusConstConst.
+Qed.
 (** [] *)
 
 End SimpleArith1.
@@ -458,7 +459,22 @@ Inductive step : tm -> tm -> Prop :=
 Theorem step_deterministic :
   deterministic step.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold deterministic. intros. generalize dependent y2.
+  induction H; intros; inversion H0; subst.
+  + reflexivity.
+  + inversion H3.
+  + inversion H4.
+  + inversion H.
+  + apply IHstep in H4. subst. reflexivity.
+  + inversion H3; subst. inversion H.
+  + inversion H1; subst. inversion H; subst. inversion H5. 
+    apply IHstep in H6. rewrite H6. reflexivity.
+  + inversion H; subst. inversion H1; subst. inversion H6.
+    apply IHstep in H7. rewrite H7. reflexivity.
+  + inversion H1; subst. inversion H; subst. inversion H7.
+    apply IHstep in H8. rewrite H8. reflexivity.
+Qed.
+  
 (** [] *)
 
 (* ================================================================= *)
@@ -606,8 +622,11 @@ Inductive step : tm -> tm -> Prop :=
 
 Lemma value_not_same_as_normal_form :
   exists v, value v /\ ~ normal_form step v.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. 
+  unfold normal_form. exists (P (C 0) (C 0)). split. apply v_funny.
+  intros contra. apply contra. exists (C 0). apply ST_PlusConstConst.
+Qed.
+
 End Temp1.
 
 (** [] *)
@@ -642,7 +661,10 @@ Inductive step : tm -> tm -> Prop :=
 Lemma value_not_same_as_normal_form :
   exists v, value v /\ ~ normal_form step v.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold normal_form. exists (C 0). split.
+  apply v_const. intros H. apply H. exists (P (C 0) (C 0)).
+  apply ST_Funny.
+Qed.
 
 End Temp2.
 (** [] *)
@@ -677,7 +699,10 @@ Inductive step : tm -> tm -> Prop :=
 Lemma value_not_same_as_normal_form :
   exists t, ~ value t /\ normal_form step t.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  exists (P (C 0) (P (C 0) (C 0))). split.
+  intros contra. inversion contra.
+  unfold normal_form. intros [t contra]. inversion contra. inversion H2.
+Qed.
 
 End Temp3.
 (** [] *)
