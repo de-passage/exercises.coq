@@ -1388,7 +1388,17 @@ Qed.
 Theorem evalF_eval : forall t n,
   evalF t = n <-> t ==> n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split.
+  + generalize dependent n. induction t; intros.
+    simpl in H; subst. apply E_Const.
+    simpl in H. rewrite <- H. apply E_Plus. apply IHt1. reflexivity.
+    apply IHt2. reflexivity.
+  + generalize dependent n. induction t; intros.
+    inversion H; subst. reflexivity.
+    simpl. inversion H; subst. assert (evalF t1 = n1).
+    { apply IHt1. assumption. } assert (evalF t2 = n2).
+    { apply IHt2. assumption. } auto.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, standard (combined_properties)  
@@ -1443,7 +1453,29 @@ Inductive step : tm -> tm -> Prop :=
     language.  (That is, state a theorem saying that the property
     holds or does not hold, and prove your theorem.) *)
 
-(* FILL IN HERE *)
+Theorem deterministic_step:
+  deterministic step.
+Proof.
+ unfold deterministic. intros. generalize dependent y2.
+ induction H; intros.
+ + inversion H0; subst; try solve_by_invert. reflexivity.
+ + inversion H0; subst; try solve_by_inverts 2.
+   apply IHstep in H4; subst. reflexivity.
+ + inversion H1; subst; try solve_by_inverts 2. 
+   apply IHstep in H6; subst; reflexivity.
+ + inversion H0; subst. reflexivity. inversion H4.
+ + inversion H0; subst. reflexivity. inversion H4.
+ + inversion H0; subst; try solve_by_invert.
+   apply IHstep in H5; subst; reflexivity.
+Qed.
+
+Theorem strong_progress_step: ~(forall t,
+  value t \/ (exists t', t --> t')).
+Proof. 
+  intros contra. destruct contra with (P tru tru).
+  inversion H. destruct H. inversion H; subst. inversion H3.
+  inversion H4.
+Qed.
 
 End Combined.
 
