@@ -10,10 +10,11 @@
     of every modern functional programming language (including
     Coq!). *)
 
-Set Warnings "-notation-overridden,-parsing".
+Set Warnings "-notation-overridden,-parsing,-implicit-core-hint-db".
 From Coq Require Import Arith.Arith.
 From LF Require Import Maps.
 From LF Require Import Imp.
+
 From PLF Require Import Smallstep.
 
 Hint Constructors multi.
@@ -181,7 +182,10 @@ Hint Unfold stuck.
 Example some_term_is_stuck :
   exists t, stuck t.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  exists (scc tru). unfold stuck. split.
+  intros [t contra]. inversion contra; subst. inversion H0.
+  intros contra. inversion contra. inversion H. inversion H; subst. inversion H1.
+Qed.
 (** [] *)
 
 (** However, although values and normal forms are _not_ the same in
@@ -193,7 +197,12 @@ Proof.
 Lemma value_is_nf : forall t,
   value t -> step_normal_form t.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold step_normal_form.
+  induction t; intros Hv [t' Ht]; try solve_by_inverts 2.
+  + induction Ht; try solve_by_inverts 2.
+    inversion Hv; subst. inversion H. inversion H; subst.
+    assert (value t1) by auto. apply IHHt in H0. auto.
+Qed.
 
 (** (Hint: You will reach a point in this proof where you need to
     use an induction to reason about a term that is known to be a
@@ -213,7 +222,26 @@ Proof.
 Theorem step_deterministic:
   deterministic step.
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  unfold deterministic. intros. generalize dependent y2.
+  induction H; intros;
+    try (inversion H0; subst; reflexivity || solve_by_invert).
+  - inversion H0; subst; try solve_by_invert.
+    assert (t1' = t1'0). apply IHstep. apply H5. subst. reflexivity.
+  - inversion H0; subst. apply IHstep in H2; subst; reflexivity.
+  - assert (value t1) by auto. apply value_is_nf in H1. 
+    unfold step_normal_form in H1. inversion H0; subst. reflexivity.
+    inversion H3; subst. exfalso. apply H1. exists t1'0. apply H4.
+  - inversion H0; subst. inversion H. assert (value y2) by auto.
+    apply value_is_nf in H1. exfalso. apply H1. inversion H; subst.
+    exists t1'0. assumption. apply IHstep in H2; subst. reflexivity.
+  - inversion H0; subst. reflexivity. inversion H2; subst.
+    assert (value t1) by auto. apply value_is_nf in H1. exfalso.
+    apply H1. exists t1'0. assumption.
+  - inversion H0; subst; try solve_by_invert. exfalso. 
+    inversion H; subst. assert (value t0) by auto. 
+    apply value_is_nf in H1. apply H1. exists t1'0. auto.
+    apply IHstep in H2. subst. reflexivity.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
@@ -321,7 +349,8 @@ Example scc_hastype_nat__hastype_nat : forall t,
   |- scc t \in Nat ->
   |- t \in Nat.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. inversion H; subst. assumption.
+Qed.
 (** [] *)
 
 (* ----------------------------------------------------------------- *)
@@ -379,7 +408,21 @@ Proof with auto.
     + (* t1 can take a step *)
       inversion H as [t1' H1].
       exists (test t1' t2 t3)...
-  (* FILL IN HERE *) Admitted.
+  - destruct IHHT.
+    + left. right. apply nv_scc. apply (nat_canonical t1 HT). auto.
+    + right. destruct H as [t' H]. exists (scc t')...
+  - destruct IHHT.
+    + apply (nat_canonical t1 HT) in H. inversion H; subst.
+      * right. exists zro...
+      * right. exists t...
+    + destruct H as [t' H]. right. exists (prd t')...
+  - destruct IHHT. 
+    + right. apply (nat_canonical t1 HT) in H. inversion H; subst.
+      * exists tru...
+      * exists fls...
+    + destruct H. right. exists (iszro x)...
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (finish_progress_informal)  
