@@ -450,7 +450,15 @@ Qed.
       - If [t1] itself can take a step, then, by [ST_Test], so can
         [t].
 
-    - (* FILL IN HERE *)
+    - If the rule is T_Scc, then t = scc t1 with t1 in Nat and t in Nat.
+      By the induction hypothesis,
+      - t1 is either a value, and it's a Nat, in which case 
+        scc t1 is a value by the nv_scc constructor
+      - or t1 can take a step to some t. By ST_Scc, (scc t1) can take
+        a step to (scc t).
+    
+        ...
+    
  *)
 (* Do not modify the following line: *)
 Definition manual_grade_for_finish_progress_informal : option (nat*string) := None.
@@ -491,7 +499,10 @@ Proof with auto.
       + (* ST_TestFls *) assumption.
       + (* ST_Test *) apply T_Test; try assumption.
         apply IHHT1; assumption.
-    (* FILL IN HERE *) Admitted.
+    - inversion HE; subst...
+    - inversion HE; subst... inversion HT; auto.
+    - inversion HE; subst...
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (finish_preservation_informal)  
@@ -542,7 +553,14 @@ Theorem preservation' : forall t t' T,
   t --> t' ->
   |- t' \in T.
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  intros. generalize dependent T.
+  induction H0; intros; inversion H; subst...
+  - inversion H0; subst...
+  - inversion H0; subst. inversion H3...
+  - inversion H0...
+  - inversion H0...
+Qed.
+
 (** [] *)
 
 (** The preservation theorem is often called _subject reduction_,
@@ -581,9 +599,18 @@ Proof.
     and [|- t' \in T], then [|- t \in T]?  If so, prove it.  If
     not, give a counter-example.  (You do not need to prove your
     counter-example in Coq, but feel free to do so.)
-
-    (* FILL IN HERE *)
 *)
+
+Theorem subject_expansion: ~(forall T t t', 
+  t --> t' -> 
+  |- t' \in T ->
+  |- t \in T).
+Proof with eauto.
+ intros contra.
+ assert (test tru tru zro --> tru)...
+ apply (contra Bool) in H. solve_by_inverts 2. auto.
+Qed. 
+
 (* Do not modify the following line: *)
 Definition manual_grade_for_subject_expansion : option (nat*string) := None.
 (** [] *)
@@ -601,11 +628,11 @@ Definition manual_grade_for_subject_expansion : option (nat*string) := None.
    else "becomes false." If a property becomes false, give a
    counterexample.
       - Determinism of [step]
-            (* FILL IN HERE *)
+            remain true
       - Progress
-            (* FILL IN HERE *)
+            remain true
       - Preservation
-            (* FILL IN HERE *)
+            remain true?
 *)
 (* Do not modify the following line: *)
 Definition manual_grade_for_variation1 : option (nat*string) := None.
@@ -620,7 +647,10 @@ Definition manual_grade_for_variation1 : option (nat*string) := None.
 
    Which of the above properties become false in the presence of
    this rule?  For each one that does, give a counter-example.
-            (* FILL IN HERE *)
+      determinism become false (test tru tru fls) can yield both tru
+      and fls)
+      progress remains true
+      preservation remains true
 *)
 (* Do not modify the following line: *)
 Definition manual_grade_for_variation2 : option (nat*string) := None.
@@ -636,7 +666,10 @@ Definition manual_grade_for_variation2 : option (nat*string) := None.
 
    Which of the above properties become false in the presence of
    this rule?  For each one that does, give a counter-example.
-            (* FILL IN HERE *)
+      determinisme remains true
+      progress remains true?
+      preservation remains true
+      eager evaluation of t2
 
     [] *)
 
@@ -662,7 +695,10 @@ Definition manual_grade_for_variation2 : option (nat*string) := None.
 
    Which of the above properties become false in the presence of
    this rule?  For each one that does, give a counter-example.
-(* FILL IN HERE *)
+      determinism remains true
+      progress remains true
+      preservation becomes false, 
+      |- prd zro in Nat -> (prd zro --> zro) -> |- prd zro in Bool
 
     [] *)
 
