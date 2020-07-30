@@ -1501,7 +1501,14 @@ Inductive aval : aexp -> Prop :=
 (** We are not actually going to bother to define boolean
     values, since they aren't needed in the definition of [-->b]
     below (why?), though they might be if our language were a bit
-    larger (why?). *)
+    larger (why?). 
+    
+    Boolean values cannot be stored in variables, so any given
+    boolean expression is always immediately reduceable to normal
+    form in the context where it's found. By allowing variables to
+    hold booleans, we would have the need to prove that a given 
+    expression containing a variable actually reduces to a value.
+    *)
 
 Reserved Notation " t '/' st '-->a' t' "
                   (at level 40, st at level 39).
@@ -1801,7 +1808,21 @@ Lemma par_body_n__Sn : forall n st,
   st X = n /\ st Y = 0 ->
   par_loop / st -->* par_loop / (X !-> S n ; st).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. destruct H. unfold par_loop.
+  eapply multi_step. apply CS_Par2. apply CS_While.
+  eapply multi_step. apply CS_Par2. apply CS_IfStep.
+    apply BS_Eq1. apply AS_Id. 
+  eapply multi_step. apply CS_Par2. apply CS_IfStep. rewrite H0.
+    apply BS_Eq. simpl.
+  eapply multi_step. apply CS_Par2. apply CS_IfTrue.
+  eapply multi_step. apply CS_Par2. apply CS_SeqStep. apply CS_AssStep.
+    apply AS_Plus1. apply AS_Id. rewrite H.
+  eapply multi_step. apply CS_Par2. apply CS_SeqStep. apply CS_AssStep.
+    apply AS_Plus. rewrite Nat.add_1_r.
+  eapply multi_step. apply CS_Par2. apply CS_SeqStep. apply CS_Ass.
+  eapply multi_step. apply CS_Par2. apply CS_SeqFinish.
+  eapply multi_refl.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (par_body_n)  *)
@@ -1810,7 +1831,14 @@ Lemma par_body_n : forall n st,
   exists st',
     par_loop / st -->*  par_loop / st' /\ st' X = n /\ st' Y = 0.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction n as [| n IHn]; intros st H.
+  - exists st. split. apply multi_refl. assumption.
+  - apply IHn in H as [st' [Hl H]]. exists (X !-> S n; st'). split; try split.
+    + apply multi_trans with (par_loop, st'); try assumption.
+      apply par_body_n__Sn. apply H.
+    + rewrite t_update_eq. reflexivity.
+    + rewrite t_update_neq by discriminate. destruct H. assumption.
+Qed.
 (** [] *)
 
 (** ... the above loop can exit with [X] having any value
@@ -1883,12 +1911,17 @@ Definition stack_multistep st := multi (stack_step st).
     State what it means for the compiler to be correct according to
     the stack machine small step semantics and then prove it. *)
 
-Definition compiler_is_correct_statement : Prop
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition compiler_is_correct_statement : Prop :=
+  forall st e,
+  stack_step st (s_compile e, []) ([], [ aeval st e ]).
 
 Theorem compiler_is_correct : compiler_is_correct_statement.
 Proof.
-(* FILL IN HERE *) Admitted.
+  unfold compiler_is_correct_statement.
+  intros st e. generalize dependent st. 
+  induction e; simpl; try constructor; intros.
+Admitted. (* I would need to use stack_multistep but need to 
+investigate why it fails to unify *)
 (** [] *)
 
 (* ################################################################# *)
@@ -1976,7 +2009,8 @@ Theorem normalize_ex : exists e',
   (P (C 3) (P (C 2) (C 1)))
   -->* e' /\ value e'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eapply ex_intro. split. normalize. constructor.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard, optional (normalize_ex')  
@@ -1987,7 +2021,8 @@ Theorem normalize_ex' : exists e',
   (P (C 3) (P (C 2) (C 1)))
   -->* e' /\ value e'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply ex_intro with (C 6). split. normalize. constructor.
+Qed.
 (** [] *)
 
 (* Thu Feb 7 20:09:24 EST 2019 *)
