@@ -12,7 +12,7 @@
     _variable binding_ and _substitution_.  It will take some work to
     deal with these. *)
 
-Set Warnings "-notation-overridden,-parsing".
+Set Warnings "-notation-overridden,-parsing,-implicit-core-hint-db".
 From Coq Require Import Strings.String.
 From LF Require Import Maps.
 From PLF Require Import Smallstep.
@@ -402,7 +402,23 @@ where "'[' x ':=' s ']' t" := (subst x s t).
 Inductive substi (s : tm) (x : string) : tm -> tm -> Prop :=
   | s_var1 :
       substi s x (var x) s
-  (* FILL IN HERE *)
+  | s_var2 y: x <> y -> substi s x (var y) (var y)
+  | s_abs1 T t1: substi s x (abs x T t1) (abs x T t1)
+  | s_abs2 T t1 t2 y: 
+        x <> y -> 
+        substi s x t1 t2 -> 
+        substi s x (abs y T t1) (abs y T t2)
+  | s_app t1 t2 t1' t2': 
+        substi s x t1 t1' -> 
+        substi s x t2 t2' -> 
+        substi s x (app t1 t2) (app t1' t2')
+  | s_tru : substi s x tru tru
+  | s_false : substi s x fls fls
+  | s_test t1 t2 t3 t1' t2' t3' : 
+        substi s x t1 t1' -> 
+        substi s x t2 t2' -> 
+        substi s x t3 t3' -> 
+        substi s x (test t1 t2 t3) (test t1' t2' t3')
 .
 
 Hint Constructors substi.
@@ -410,7 +426,28 @@ Hint Constructors substi.
 Theorem substi_correct : forall s x t t',
   [x:=s]t = t' <-> substi s x t t'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split; intros.
+  + generalize dependent t'. induction t; intros.
+    - destruct (eqb_string x0 s0) eqn:D. 
+      * simpl in H. rewrite D in H. apply eqb_string_true_iff in D. 
+        subst. apply s_var1.
+      * simpl in H. rewrite D in H. apply eqb_string_false_iff in D.
+        rewrite <- H. apply (s_var2 _ _ _ D).
+    - simpl in H. rewrite <- H. apply s_app. 
+      apply IHt1. reflexivity. apply IHt2. reflexivity.
+    - simpl in H. destruct (eqb_string x0 s0) eqn:D. 
+      * rewrite <- H. apply eqb_string_true_iff in D. subst. apply s_abs1.
+      * rewrite <- H. apply s_abs2. apply eqb_string_false_iff in D. 
+        assumption. apply IHt. reflexivity.
+    - subst. auto.
+    - subst. auto.
+    - subst. simpl. auto.
+  + induction H; subst; auto; simpl.
+    - rewrite <- eqb_string_refl. reflexivity.
+    - rewrite (false_eqb_string _ _ H). reflexivity.
+    - rewrite <- eqb_string_refl. reflexivity.
+    - rewrite (false_eqb_string _ _ H). reflexivity.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
