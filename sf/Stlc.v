@@ -640,13 +640,18 @@ Lemma step_example5 :
        app (app idBBBB idBB) idB
   -->* idB.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eapply multi_step.
+    apply ST_App1. apply ST_AppAbs. apply v_abs. simpl.
+  eapply multi_step. apply ST_AppAbs. apply v_abs. simpl.
+  eapply multi_refl.
+Qed.
 
 Lemma step_example5_with_normalize :
        app (app idBBBB idBB) idB
   -->* idB.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  normalize.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -779,7 +784,11 @@ Example typing_example_2_full :
           (app (var y) (app (var y) (var x))))) \in
     (Arrow Bool (Arrow (Arrow Bool Bool) Bool)).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply T_Abs. apply T_Abs. apply T_App with Bool.
+  apply T_Var. apply update_eq.
+  apply T_App with Bool. apply T_Var. apply update_eq.
+  apply T_Var. apply update_neq. discriminate.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard (typing_example_3)  
@@ -801,7 +810,16 @@ Example typing_example_3 :
                (app (var y) (app (var x) (var z)))))) \in
       T.
 Proof with auto.
-  (* FILL IN HERE *) Admitted.
+  exists (Arrow (Arrow Bool Bool) 
+         (Arrow (Arrow Bool Bool) 
+         (Arrow Bool Bool))).
+  apply T_Abs. apply T_Abs. apply T_Abs.
+  eapply T_App. apply T_Var. rewrite update_neq. 
+    apply update_eq. discriminate.
+  eapply T_App. apply T_Var. 
+    rewrite update_neq, update_neq; try discriminate. apply update_eq.
+  apply T_Var. apply update_eq.
+Qed.
 (** [] *)
 
 (** We can also show that some terms are _not_ typable.  For example, 
@@ -845,7 +863,16 @@ Example typing_nonexample_3 :
              (app (var x) (var x))) \in
           T).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros [S [T contra]]. 
+  inversion contra; subst; clear contra.
+  inversion H4; subst; clear H4.
+  inversion H2; subst; clear H2.
+  inversion H5; subst; clear H5.
+  inversion H2; subst. inversion H1; subst.
+  induction T11; inversion H0; subst.
+  apply IHT11_1. auto. rewrite update_eq. rewrite <- H3. reflexivity.
+  assumption.
+Qed.
 (** [] *)
 
 End STLC.
