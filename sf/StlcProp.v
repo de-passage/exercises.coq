@@ -1,6 +1,6 @@
 (** * StlcProp: Properties of STLC *)
 
-Set Warnings "-notation-overridden,-parsing".
+Set Warnings "-notation-overridden,-parsing,-implicit-core-hint-db".
 From LF Require Import Maps.
 From PLF Require Import Types.
 From PLF Require Import Stlc.
@@ -260,8 +260,36 @@ Definition closed (t:tm) :=
     understanding it is crucial to understanding substitution and its
     properties, which are really the crux of the lambda-calculus. *)
 
-(* FILL IN HERE *)
+    (* Writing "x appears free in t" as "x \> t"
 
+      ------------- (afi_var)
+        x \> var x
+
+         x \> t1
+      ----------- (afi_app_1)
+        x \> app t1 t2
+
+         x \> t2
+      ----------- (afi_app_2)
+        x \> app t1 t2
+      
+        x <> y
+        x \> t
+      ---------- (afi_abs)
+      x \> \y:T.t
+
+        x \> t1
+      ------------ (afi_test_1)
+      x \> test t1 t2 t3
+
+        x \> t2
+      ------------ (afi_test_2)
+      x \> test t1 t2 t3
+
+        x \> t3
+      ------------ (afi_test_3)
+      x \> test t1 t2 t3
+    *)
 (* Do not modify the following line: *)
 Definition manual_grade_for_afi : option (nat*string) := None.
 (** [] *)
@@ -330,7 +358,10 @@ Corollary typable_empty__closed : forall t T,
     empty |- t \in T  ->
     closed t.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold closed. intros. intros C.
+  pose proof (free_in_context _ _ _ _ C H) as [T' contra].
+  inversion contra.
+Qed.
 (** [] *)
 
 (** Sometimes, when we have a proof of some typing relation
