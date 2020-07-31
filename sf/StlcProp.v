@@ -141,7 +141,22 @@ Theorem progress' : forall t T,
 Proof.
   intros t.
   induction t; intros T Ht; auto.
-  (* FILL IN HERE *) Admitted.
+  - inversion Ht; subst. inversion H1.
+  - inversion Ht; subst. remember H2 as R eqn:Hr. clear Hr. right.
+    apply IHt1 in H2 as [H'|H'].
+    + apply IHt2 in H4 as [H|H].
+      * assert (exists x0 t0, t1 = abs x0 T11 t0). {
+        eapply canonical_forms_fun; eassumption.
+        } destruct H0 as [x [t' Hx]]. rewrite Hx. exists ([x:=t2] t').
+        apply ST_AppAbs. assumption.
+      * destruct H as [t' H]. exists (app t1 t'). apply ST_App2; assumption.
+    + destruct H' as [t' H']. exists (app t' t2). apply ST_App1; assumption.
+  - right. inversion Ht; subst. remember H3 as R. clear HeqR. 
+    apply IHt1 in H3 as [H|[t' H]].
+    + destruct (canonical_forms_bool t1); try assumption; subst.
+      exists t2; auto. exists t3; auto.
+    + exists (test t' t2 t3). auto.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
