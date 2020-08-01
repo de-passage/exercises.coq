@@ -645,7 +645,12 @@ Qed.
     You can state your counterexample informally in words, with a brief 
     explanation. *)
 
-(* FILL IN HERE *)
+(*   ~(t-->t' -> Gamma |- t' \in T -> empty |- t \in T)
+    with (\x:U.tru)v --> [x:=v]tru -> empty |- [x:=v]tru \in T -> empty |- (\x:U.tru)v \in T
+    If the term is an abstraction returning a well typed value independently
+    of context, we could still have a free term in the argument (v) and 
+    therefore an ill-typed program.
+*)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_subject_expansion_stlc : option (nat*string) := None.
@@ -670,7 +675,10 @@ Proof.
   intros t t' T Hhas_type Hmulti. unfold stuck.
   intros [Hnf Hnot_val]. unfold normal_form in Hnf.
   induction Hmulti.
-  (* FILL IN HERE *) Admitted.
+  - destruct (progress _ _ Hhas_type). apply Hnot_val in H. inversion H.
+    apply Hnf in H. inversion H.
+  - apply IHHmulti; try assumption. apply (preservation _ _ _ Hhas_type H).
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -686,7 +694,16 @@ Theorem unique_types : forall Gamma e T T',
   Gamma |- e \in T' ->
   T = T'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. generalize dependent T'. induction H; intros; subst.
+  + inversion H0; subst. rewrite H3 in H. inversion H. reflexivity.
+  + inversion H0; subst. apply IHhas_type in H6; subst. reflexivity.
+  + inversion H1; subst. apply IHhas_type1 in H5. inversion H5; subst.
+    reflexivity.
+  + inversion H0; subst. reflexivity.
+  + inversion H0; subst. reflexivity.
+  + inversion H2; subst. apply (IHhas_type2 _ H9).
+Qed.
+  
 (** [] *)
 
 (* ################################################################# *)
@@ -698,7 +715,17 @@ Proof.
     and preservation theorems for the simply typed lambda-calculus (as
     Coq theorems).
     You can write [Admitted] for the proofs. *)
-(* FILL IN HERE *)
+
+(*
+  Theorem progress : forall t T,
+    empty |- t \in T ->
+    value t \/ (exists t', t --> t').
+
+  Theorem preservation: forall t t' T,
+    empty |- t \in T ->
+    t --> t' ->
+    empty |- t \in T.
+*)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_progress_preservation_statement : option (nat*string) := None.
@@ -721,12 +748,17 @@ and the following typing rule:
     "remains true" or "becomes false." If a property becomes
     false, give a counterexample.
 
-      - Determinism of [step]
-(* FILL IN HERE *)
+      - Determinism of [step]]
+        becomes false. every term can step to zap, so every case
+        that can already step has an additional outcome.
+        e.g. 
+          test tru t1 t2 --> t1 && test tru t1 t2 --> zap
       - Progress
-(* FILL IN HERE *)
+        remains true. 
+        notably zap is not a value, but zap is always well typed and 
+        zap --> zap always holds...
       - Preservation
-(* FILL IN HERE *)
+        remains tru. zap essentially has all types 
 *)
 
 (* Do not modify the following line: *)
@@ -750,11 +782,15 @@ Definition manual_grade_for_stlc_variation1 : option (nat*string) := None.
     false, give a counterexample.
 
       - Determinism of [step]
-(* FILL IN HERE *)
+        remains true. 
+        there were no rules for stepping from an abstraction, and the 
+        new rules are deterministic themselves
       - Progress
-(* FILL IN HERE *)
+        remains true. We can progress from the identity to foo,
+        and foo is ill-typed, so cannot appear in the supposition.
       - Preservation
-(* FILL IN HERE *)
+        becomes false, (\x:A. x) has type (A -> A), 
+        but foo is ill-typed, so the first rule is a counter example
 *)
 
 (* Do not modify the following line: *)
@@ -770,11 +806,15 @@ Definition manual_grade_for_stlc_variation2 : option (nat*string) := None.
     false, give a counterexample.
 
       - Determinism of [step]
-(* FILL IN HERE *)
+        remains true. less rules means less chances of having 
+        conflicting outcomes from different rules, and we didn't 
+        have any.
       - Progress
-(* FILL IN HERE *)
+        remains true. we don't actually need to step from unreduced 
+        abstractions as they are values by definition, and we can 
+        always use ST_AppAbs with a value reduces with ST_App2.
       - Preservation
-(* FILL IN HERE *)
+        remains true. less steps are less opportunities for mistakes.
 *)
 
 (* Do not modify the following line: *)
@@ -795,12 +835,15 @@ Definition manual_grade_for_stlc_variation3 : option (nat*string) := None.
     false, give a counterexample.
 
       - Determinism of [step]
-(* FILL IN HERE *)
+        becomes false. 
+          test tru then fls else t2 --> tru (ST_TestTru)
+          && test tru then fls else t2 --> fls (ST_FunnyTestTru)
       - Progress
-(* FILL IN HERE *)
+        remains tru.
       - Preservation
-(* FILL IN HERE *)
-
+        becomes false. 
+        empty |- test tru then idB else idB \in (Arrow Bool Bool)
+        but after ST_FunnyTestTru we have: empty |- tru in \Bool
     [] *)
 
 (** **** Exercise: 2 stars, standard, optional (stlc_variation5)  
@@ -819,12 +862,12 @@ Definition manual_grade_for_stlc_variation3 : option (nat*string) := None.
     false, give a counterexample.
 
       - Determinism of [step]
-(* FILL IN HERE *)
+        remains true. step independent of typing
       - Progress
-(* FILL IN HERE *)
+        remains tru? 
       - Preservation
-(* FILL IN HERE *)
-
+        seems to become false because we broke the preservation of typing in substitution.
+        counterexample???
     [] *)
 
 (** **** Exercise: 2 stars, standard, optional (stlc_variation6)  
@@ -843,11 +886,12 @@ Definition manual_grade_for_stlc_variation3 : option (nat*string) := None.
     false, give a counterexample.
 
       - Determinism of [step]
-(* FILL IN HERE *)
+        remains true. independent of types
       - Progress
-(* FILL IN HERE *)
+        become false. tru tru in well type but not a value and 
+        cannot progress.
       - Preservation
-(* FILL IN HERE *)
+        Remains true.
 
     [] *)
 
@@ -865,12 +909,11 @@ Definition manual_grade_for_stlc_variation3 : option (nat*string) := None.
     false, give a counterexample.
 
       - Determinism of [step]
-(* FILL IN HERE *)
+        remains true. determinism independent of typing.
       - Progress
-(* FILL IN HERE *)
+        remains true. an ill typed function is still a valid value by definition
       - Preservation
-(* FILL IN HERE *)
-
+        still true?????
     [] *)
 
 End STLCProp.
