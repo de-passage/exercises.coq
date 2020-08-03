@@ -1912,11 +1912,20 @@ Proof with eauto.
     + right. destruct H as [t' Ht'].
       exists (pair t' t2)...
   - destruct IHHt...
+    + inversion Ht; subst; try solve_by_invert.
+      right. inversion H; subst. exists t0... 
+    + destruct H as [t' Ht']. right. 
+      exists (fst t')...
+  - destruct IHHt...
+    + right. inversion Ht; subst; try solve_by_invert.
+      inversion H; subst. exists t2...
+    +  destruct H as [t' Ht']. right. exists (snd t')...
+     
   (* let *)
   (* FILL IN HERE *)
   (* fix *)
   (* FILL IN HERE *)
-(* FILL IN HERE *) Admitted.
+(* FILL IN HERE *) Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_progress : option (nat*string) := None.
@@ -2003,7 +2012,18 @@ Inductive appears_free_in : string -> tm -> Prop :=
   (* Add rules for the following extensions. *)
 
   (* pairs *)
-  (* FILL IN HERE *)
+  | afi_pair1 : forall x t1 t2,
+      appears_free_in x t1 ->
+      appears_free_in x (pair t1 t2)
+  | afi_pair2 : forall x t1 t2,
+      appears_free_in x t2 ->
+      appears_free_in x (pair t1 t2)
+  | afi_fst : forall x t,
+      appears_free_in x t ->
+      appears_free_in x (fst t)
+  | afi_snd : forall x t,
+      appears_free_in x t -> 
+      appears_free_in x (snd t)
   (* let *)
   (* FILL IN HERE *)
   (* fix *)
@@ -2043,8 +2063,7 @@ Proof with eauto 30.
     destruct (eqb_stringP x2 y)...
 
   (* Complete the proof. *)
-
-  (* FILL IN HERE *) Admitted.
+Qed.
 
 Lemma free_in_context : forall x t T Gamma,
    appears_free_in x t ->
@@ -2075,7 +2094,7 @@ Proof with eauto.
 
   (* Complete the proof. *)
 
-  (* FILL IN HERE *) Admitted.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_context_invariance : option (nat*string) := None.
@@ -2224,7 +2243,7 @@ Proof with eauto.
 
   (* Complete the proof. *)
 
-  (* FILL IN HERE *) Admitted.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_substitution_preserves_typing : option (nat*string) := None.
@@ -2290,12 +2309,15 @@ Proof with eauto.
   (* Complete the proof. *)
 
   (* fst and snd *)
-  (* FILL IN HERE *)
+  - (* T_Fst *)
+    inversion HT...
+  - (* T_Snd *)
+    inversion HT...
   (* let *)
   (* FILL IN HERE *)
   (* fix *)
   (* FILL IN HERE *)
-(* FILL IN HERE *) Admitted.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_preservation : option (nat*string) := None.
