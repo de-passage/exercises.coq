@@ -1122,13 +1122,19 @@ Qed.
     type. *)
 
 (** **** Exercise: 3 stars, standard, optional (canonical_forms_of_arrow_types)  *)
+
 Lemma canonical_forms_of_arrow_types : forall Gamma s T1 T2,
   Gamma |- s \in Arrow T1 T2 ->
   value s ->
   exists x S1 s2,
      s = abs x S1 s2.
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  intros. remember (Arrow T1 T2) as V.
+  generalize dependent T2. generalize dependent T1. 
+  induction H; intros; try solve_by_invert... subst.
+  apply sub_inversion_arrow in H1 as [U1[U2[Ha[Hu1 Hu2]]]].
+  apply IHhas_type with U1 U2...
+Qed.
 (** [] *)
 
 (** Similarly, the canonical forms of type [Bool] are the constants
