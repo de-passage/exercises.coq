@@ -669,7 +669,7 @@ From Coq Require Import Strings.String.
 
     fact 1 = fix F 3
 
-    [ST_FixApp + ST_App1]
+    [ST_FixAbs + ST_App1]
     (\x. test x = 0 then 1 else x * (fix f (pred x))) 1
 
     [ST_AppAbs]
@@ -1070,8 +1070,8 @@ Fixpoint subst (x : string) (s : tm) (t : tm) : tm :=
         (subst x s t1)
         (if eqb_string x y then t2 else subst x s t2)
   (* fix *)
-  (* FILL IN HERE *)
-  | _ => t  (* ... and delete this line when you finish the exercise *)
+  | tfix t => 
+      tfix (subst x s t)
   end.
 
 Notation "'[' x ':=' s ']' t" := (subst x s t) (at level 20).
@@ -1217,7 +1217,12 @@ Inductive step : tm -> tm -> Prop :=
     value v1 ->
     (tlet x v1 t2) --> [x:=v1]t2
   (* fix *)
-  (* FILL IN HERE *)
+  | ST_Fix1 : forall t1 t1',
+      t1 --> t1' -> 
+      (tfix t1) --> (tfix t1')
+  | ST_FixAbs : forall t1 T1 xf, 
+      (tfix (abs xf T1 t1)) --> 
+          [xf:=(tfix (abs xf T1 t1))]t1
 
 where "t1 '-->' t2" := (step t1 t2).
 
@@ -1314,7 +1319,9 @@ Inductive has_type : context -> tm -> ty -> Prop :=
       Gamma |- (tlet x t1 t2) \in T2
 
   (* fix *)
-  (* FILL IN HERE *)
+  | T_Fix : forall Gamma t1 T1,
+      Gamma |- t1 \in (Arrow T1 T1) ->
+      Gamma |- (tfix t1) \in T1
 
 where "Gamma '|-' t '\in' T" := (has_type Gamma t T).
 
@@ -1593,16 +1600,16 @@ Definition fact :=
 
 Example typechecks :
   empty |- fact \in (Arrow Nat Nat).
-Proof. unfold fact. auto 10. (* FILL IN HERE *) Admitted.
+Proof. unfold fact. auto 10. Qed.
 (* GRADE_THEOREM 0.25: typechecks *)
+
 
 Example reduces :
   (app fact (const 4)) -->* (const 24).
 Proof.
-(* 
-  unfold fact. normalize.
-*)
-(* FILL IN HERE *) Admitted.
+  unfold fact.
+  normalize.
+Qed.
 (* GRADE_THEOREM 0.25: reduces *)
 
 End FixTest1.
@@ -1632,7 +1639,7 @@ Example typechecks :
     (Arrow (Arrow Nat Nat)
       (Arrow (List Nat)
         (List Nat))).
-Proof. unfold map. auto 10. (* FILL IN HERE *) Admitted.
+Proof. unfold map. auto 10. Qed.
 (* GRADE_THEOREM 0.25: typechecks *)
 
 Example reduces :
@@ -1640,10 +1647,8 @@ Example reduces :
          (tcons (const 1) (tcons (const 2) (tnil Nat)))
   -->* (tcons (const 2) (tcons (const 3) (tnil Nat))).
 Proof.
-(* 
   unfold map. normalize.
-*)
-(* FILL IN HERE *) Admitted.
+Qed.
 (* GRADE_THEOREM 0.25: reduces *)
 
 End FixTest2.
@@ -1673,25 +1678,21 @@ Definition equal :=
 
 Example typechecks :
   empty |- equal \in (Arrow Nat (Arrow Nat Nat)).
-Proof. unfold equal. auto 10. (* FILL IN HERE *) Admitted.
+Proof. unfold equal. auto 10. Qed.
 (* GRADE_THEOREM 0.25: typechecks *)
 
 Example reduces :
   (app (app equal (const 4)) (const 4)) -->* (const 1).
 Proof.
-(* 
   unfold equal. normalize.
-*)
-(* FILL IN HERE *) Admitted.
+Qed.
 (* GRADE_THEOREM 0.25: reduces *)
 
 Example reduces2 :
   (app (app equal (const 4)) (const 5)) -->* (const 0).
 Proof.
-(* 
   unfold equal. normalize.
-*)
-(* FILL IN HERE *) Admitted.
+Qed.
 
 End FixTest3.
 
@@ -1729,16 +1730,14 @@ Definition eotest :=
 
 Example typechecks :
   empty |- eotest \in (Prod Nat Nat).
-Proof. unfold eotest. eauto 30. (* FILL IN HERE *) Admitted.
+Proof. unfold eotest. eauto 30. Qed.
 (* GRADE_THEOREM 0.25: typechecks *)
 
 Example reduces :
   eotest -->* (pair (const 0) (const 1)).
 Proof.
-(* 
   unfold eotest. normalize.
-*)
-(* FILL IN HERE *) Admitted.
+Qed.
 (* GRADE_THEOREM 0.25: reduces *)
 
 End FixTest4.
@@ -1928,8 +1927,9 @@ Proof with eauto.
   (* let *)
   - destruct IHHt1 as [H|[t' Ht']]...
   (* fix *)
-  (* FILL IN HERE *)
-(* FILL IN HERE *) Qed.
+  - destruct IHHt as [H|[t' Ht']]...
+    inversion Ht; subst; try solve_by_invert...
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_progress : option (nat*string) := None.
