@@ -2036,8 +2036,10 @@ Inductive appears_free_in : string -> tm -> Prop :=
       x <> y -> 
       appears_free_in x t2 ->
       appears_free_in x (tlet y t1 t2)
-  (* fix *)
-  (* FILL IN HERE *)
+    (* fix *)
+  | afi_fix : forall x t, 
+    appears_free_in x t ->
+    appears_free_in x (tfix t)
 .
 
 Hint Constructors appears_free_in.
@@ -2344,7 +2346,9 @@ Proof with eauto.
   - (* T_Let *) 
     eapply substitution_preserves_typing...
   (* fix *)
-  (* FILL IN HERE *)
+  - (* T_Fix *)
+    eapply substitution_preserves_typing...
+    inversion HT...
 Qed.
 
 (* Do not modify the following line: *)
