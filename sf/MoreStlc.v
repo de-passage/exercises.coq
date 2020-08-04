@@ -1065,7 +1065,10 @@ Fixpoint subst (x : string) (s : tm) (t : tm) : tm :=
   | snd t =>
       snd (subst x s t)
   (* let *)
-  (* FILL IN HERE *)
+  | tlet y t1 t2 =>
+      tlet y 
+        (subst x s t1)
+        (if eqb_string x y then t2 else subst x s t2)
   (* fix *)
   (* FILL IN HERE *)
   | _ => t  (* ... and delete this line when you finish the exercise *)
@@ -1207,7 +1210,12 @@ Inductive step : tm -> tm -> Prop :=
       value v2 -> 
       (snd (pair v1 v2)) --> v2
   (* let *)
-  (* FILL IN HERE *)
+  | ST_Let1 : forall x t1 t1' t2,
+      t1 --> t1' ->
+      (tlet x t1 t2) --> (tlet x t1' t2)
+  | ST_LetValue : forall x v1 t2,
+    value v1 ->
+    (tlet x v1 t2) --> [x:=v1]t2
   (* fix *)
   (* FILL IN HERE *)
 
@@ -1300,7 +1308,11 @@ Inductive has_type : context -> tm -> ty -> Prop :=
       Gamma |- t1 \in (Prod T1 T2) ->
       Gamma |- (snd t1) \in T2
   (* let *)
-  (* FILL IN HERE *)
+  | T_Let : forall Gamma x t1 t2 T1 T2,
+      Gamma |- t1 \in T1 -> 
+      (update Gamma x T1) |- t2 \in T2 -> 
+      Gamma |- (tlet x t1 t2) \in T2
+
   (* fix *)
   (* FILL IN HERE *)
 
@@ -1457,16 +1469,14 @@ Definition test :=
 
 Example typechecks :
   empty |- test \in Nat.
-Proof. unfold test. eauto 15. (* FILL IN HERE *) Admitted.
+Proof. unfold test. eauto 15. Qed.
 (* GRADE_THEOREM 0.25: typechecks *)
 
 Example reduces :
   test -->* const 6.
 Proof.
-(* 
   unfold test. normalize.
-*)
-(* FILL IN HERE *) Admitted.
+Qed.
 (* GRADE_THEOREM 0.25: reduces *)
 
 End LetTest.
@@ -1487,15 +1497,13 @@ Definition test :=
 
 Example typechecks :
   empty |- test \in Nat.
-Proof. unfold test. eauto 15. (* FILL IN HERE *) Admitted.
+Proof. unfold test. eauto 15. Qed.
 
 Example reduces :
   test -->* (const 5).
 Proof.
-(* 
   unfold test. normalize.
-*)
-(* FILL IN HERE *) Admitted.
+Qed.
 
 End Sumtest1.
 
@@ -1521,15 +1529,13 @@ Definition test :=
 
 Example typechecks :
   empty |- test \in (Prod Nat Nat).
-Proof. unfold test. eauto 15. (* FILL IN HERE *) Admitted.
+Proof. unfold test. eauto 15. Qed.
 
 Example reduces :
   test -->* (pair (const 5) (const 0)).
 Proof.
-(* 
   unfold test. normalize.
-*)
-(* FILL IN HERE *) Admitted.
+Qed.
 
 End Sumtest2.
 
@@ -1552,15 +1558,13 @@ Definition test :=
 
 Example typechecks :
   empty |- test \in Nat.
-Proof. unfold test. eauto 20. (* FILL IN HERE *) Admitted.
+Proof. unfold test. eauto 20. Qed.
 
 Example reduces :
   test -->* (const 25).
 Proof.
-(* 
   unfold test. normalize.
-*)
-(* FILL IN HERE *) Admitted.
+Qed.
 
 End ListTest.
 
@@ -1922,7 +1926,7 @@ Proof with eauto.
     +  destruct H as [t' Ht']. right. exists (snd t')...
      
   (* let *)
-  (* FILL IN HERE *)
+  - destruct IHHt1 as [H|[t' Ht']]...
   (* fix *)
   (* FILL IN HERE *)
 (* FILL IN HERE *) Qed.
@@ -2025,7 +2029,13 @@ Inductive appears_free_in : string -> tm -> Prop :=
       appears_free_in x t -> 
       appears_free_in x (snd t)
   (* let *)
-  (* FILL IN HERE *)
+  | afi_let1 : forall x y t1 t2,
+      appears_free_in x t1 -> 
+      appears_free_in x (tlet y t1 t2)
+  | afi_let2 : forall x y t1 t2,
+      x <> y -> 
+      appears_free_in x t2 ->
+      appears_free_in x (tlet y t1 t2)
   (* fix *)
   (* FILL IN HERE *)
 .
@@ -2063,6 +2073,11 @@ Proof with eauto 30.
     destruct (eqb_stringP x2 y)...
 
   (* Complete the proof. *)
+  - (* T_Let *)
+    eapply T_Let...
+    apply IHhas_type2. intros y Hafi.
+    unfold update, t_update.
+    destruct (eqb_stringP x y)...
 Qed.
 
 Lemma free_in_context : forall x t T Gamma,
@@ -2093,7 +2108,10 @@ Proof with eauto.
     rewrite false_eqb_string in Hctx...
 
   (* Complete the proof. *)
-
+  - (* T_Let *)
+    destruct IHHtyp2 as [T' Hctx]...
+    exists  T'. unfold update, t_update in Hctx.
+    rewrite false_eqb_string in Hctx...
 Qed.
 
 (* Do not modify the following line: *)
@@ -2242,7 +2260,16 @@ Proof with eauto.
         subst. rewrite false_eqb_string...
 
   (* Complete the proof. *)
-
+  - (* tlet *)
+    eapply T_Let...
+    destruct (eqb_stringP x s)...
+    + eapply context_invariance...
+      subst. intros y Hafi. 
+      unfold update, t_update.
+      destruct (eqb_stringP s y)...
+    + apply IHt2. eapply context_invariance...
+      intros y Hafi. unfold update. 
+      rewrite t_update_permute...
 Qed.
 
 (* Do not modify the following line: *)
@@ -2314,7 +2341,8 @@ Proof with eauto.
   - (* T_Snd *)
     inversion HT...
   (* let *)
-  (* FILL IN HERE *)
+  - (* T_Let *) 
+    eapply substitution_preserves_typing...
   (* fix *)
   (* FILL IN HERE *)
 Qed.
