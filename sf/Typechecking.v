@@ -18,7 +18,7 @@
 
 Set Warnings "-notation-overridden,-parsing".
 From Coq Require Import Bool.Bool.
-From PLF Require Import Maps.
+From LF Require Import Maps.
 From PLF Require Import Smallstep.
 From PLF Require Import Stlc.
 From PLF Require MoreStlc.
@@ -345,7 +345,12 @@ Fixpoint type_check (Gamma : context) (t : tm) : option ty :=
   (* Complete the following cases. *)
   
   (* sums *)
-  (* FILL IN HERE *)
+  | tinl T2 t => 
+      T1 <- type_check Gamma t;;
+      return (Sum T1 T2)
+  | tinr T1 t => 
+      T2 <- type_check Gamma t;;
+      return (Sum T1 T2)
   (* lists (the [tlcase] is given for free) *)
   (* FILL IN HERE *)
   | tlcase t0 t1 x21 x22 t2 =>
@@ -426,6 +431,11 @@ Proof with eauto.
     invert_typecheck Gamma t3 T3.
     destruct T1; try solve_by_invert.
     case_equality T2 T3.
+  - (* tinl *)
+    fully_invert_typecheck Gamma t0 T T11 T12.
+  - (* tinr *)
+    fully_invert_typecheck Gamma t0 T T11 T12.
+
   (* FILL IN HERE *)
   - (* tlcase *)
     rename s into x31. rename s0 into x32.

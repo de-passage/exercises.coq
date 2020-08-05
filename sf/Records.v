@@ -2,7 +2,7 @@
 
 Set Warnings "-notation-overridden,-parsing".
 From Coq Require Import Strings.String.
-From PLF Require Import Maps.
+From LF Require Import Maps.
 From PLF Require Import Imp.
 From PLF Require Import Smallstep.
 From PLF Require Import Stlc.
