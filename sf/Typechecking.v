@@ -543,8 +543,75 @@ Import MoreStlc.
 Import STLCExtended.
 
 (* Operational semantics as a Coq function. *)
-Fixpoint stepf (t : tm) : option tm
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint stepf (t : tm) : option tm :=
+  match t with
+  | var y => None
+  | abs y T t1 => None
+  | app t1 t2 =>
+    match stepf t1, stepf t2, t1 with
+    | None, None, abs x T t' => return [x:= t2]t' 
+    | None, Some t, _  => return t
+    | t, _, _ => t
+    end
+    
+  | const n => fail
+  | scc t1 => stepf t1
+  | prd t1 => stepf t1
+  | mlt t1 t2 => 
+      match stepf t1, stepf t2, t1, t2 with
+      | None, None, (const v1), (const v2) => 
+          return (const (mult v1 v2))
+      | None, Some t, _, _ => return t
+      | t, _, _, _ => t
+      end
+  | test0 t1 t2 t3 =>
+    match stepf t1, t1 with
+    | None, const 0 => return t2
+    | None, const (S n) => return t3
+    | t, _ => t
+    end
+  | tinl T t1 => stepf t1
+  | tinr T t1 => stepf t1
+  | tcase t0 y1 t1 y2 t2 =>
+      match stepf t0, stepf t1, stepf t2, t0 with
+      | None, None, None, (tinl T t) => return [y1:=t]t1
+      | None, None, None, (tinr T t) => return [y2:=t]t2
+      | None, None, Some t, _ => return t
+      | None, Some t, _, _ => return t
+      | t, _, _, _ => t
+      end
+  | tnil T => fail
+  | tcons t1 t2 =>
+      match stepf t1, stepf t2 with
+      | None, Some t => return t 
+      | t, _ => t
+      end
+  | tlcase t1 t2 y1 y2 t3 =>
+      match stepf t1, t1 with
+      | None, tnil T => return t2
+      | None, tcons h t => return [y1:=h]([y2:=t]t3)
+      | t, _ => t
+      end
+  | unit => fail
+  | pair t1 t2 => 
+      match stepf t1, stepf t2 with
+      | None, Some t => return t
+      | t, _ => t
+      end
+  | fst t => stepf t
+  | snd t => stepf t
+  | tlet y t1 t2 => 
+      match stepf t1 with
+      | None => return [y:=t1]t2
+      | t => t
+      end
+  | tfix t =>
+      match stepf t, t with
+      | None, abs x T t' => return [x:=(tfix (abs x T t'))]t
+      | t, _ => t
+      end
+  end.
+  
 
 (* Soundness of [stepf]. *)
 Theorem sound_stepf : forall t t',
