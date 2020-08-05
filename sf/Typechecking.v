@@ -353,6 +353,14 @@ Fixpoint type_check (Gamma : context) (t : tm) : option ty :=
       return (Sum T1 T2)
   (* lists (the [tlcase] is given for free) *)
   (* FILL IN HERE *)
+  | tnil T => return (List T)
+  | tcons t1 t2 =>
+      T1 <- type_check Gamma t1;;
+      match type_check Gamma t2 with
+      | Some (List T2) =>
+        if eqb_ty T1 T2 then Some (List T1) else None
+      | _ => None
+      end
   | tlcase t0 t1 x21 x22 t2 =>
       match type_check Gamma t0 with
       | Some (List T) =>
@@ -435,8 +443,13 @@ Proof with eauto.
     fully_invert_typecheck Gamma t0 T T11 T12.
   - (* tinr *)
     fully_invert_typecheck Gamma t0 T T11 T12.
-
-  (* FILL IN HERE *)
+  - (* tnil *)
+    auto. 
+  - (* tcons *)
+    invert_typecheck Gamma t1 T1.
+    invert_typecheck Gamma t2 T2.
+    destruct T2; try solve_by_invert.
+    case_equality T1 T2.
   - (* tlcase *)
     rename s into x31. rename s0 into x32.
     fully_invert_typecheck Gamma t1 T1 T11 T12.
