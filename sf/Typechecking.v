@@ -351,6 +351,14 @@ Fixpoint type_check (Gamma : context) (t : tm) : option ty :=
   | tinr T1 t => 
       T2 <- type_check Gamma t;;
       return (Sum T1 T2)
+  | tcase t0 y1 t1 y2 t2 =>
+      match type_check Gamma t0 with
+      | Some (Sum T1 T2) =>
+          T1' <- type_check (update Gamma y1 T1) t1;;
+          T2' <- type_check (update Gamma y2 T2) t2;;
+          if eqb_ty T1' T2' then return T1' else fail
+      | _ => fail
+      end
   (* lists (the [tlcase] is given for free) *)
   | tnil T => return (List T)
   | tcons t1 t2 =>
@@ -400,7 +408,6 @@ Fixpoint type_check (Gamma : context) (t : tm) : option ty :=
           else fail
       | _ => fail
       end
-  | _ => None  (* ... and delete this line when you complete the exercise. *)
   end.
 
 (** Just for fun, we'll do the soundness proof with just a bit more
@@ -463,6 +470,11 @@ Proof with eauto.
     fully_invert_typecheck Gamma t0 T T11 T12.
   - (* tinr *)
     fully_invert_typecheck Gamma t0 T T11 T12.
+  - (* tcase *)
+    fully_invert_typecheck Gamma t1 T T11 T12.
+    invert_typecheck (update Gamma s T11) t2 T1'.
+    invert_typecheck (update Gamma s0 T12) t3 T2'.
+    case_equality T1' T2'.
   - (* tnil *)
     auto. 
   - (* tcons *)
@@ -511,8 +523,7 @@ Proof.
     try (rewrite (eqb_ty_refl T2)); 
     eauto.
   - destruct (Gamma x); try solve_by_invert. eauto.
-  - 
-  Admitted. (* ... and delete this line *)
+Qed.
 (* 
 Qed. (* ... and uncomment this one *)
 *)
