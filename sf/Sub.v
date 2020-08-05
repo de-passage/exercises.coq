@@ -1647,26 +1647,37 @@ Qed.
                     S1 <: T1     T1 <: S1      S2 <: T2
                     -----------------------------------    (T_Funny1)
                            Gamma |- t \in T1->T2
+      it's a more restrictive version of the arrow subtyping relation,
+      it shouldn't change anything
 
     - Suppose we add the following reduction rule:
 
                              --------------------         (ST_Funny21)
                              unit --> (\x:Top. x)
+      progress remains true, but preservation becomes false.
+      empty |- unit \in Unit and empty |- (\x:Top. x) \in (Top -> Top)
 
     - Suppose we add the following subtyping rule:
 
                                ----------------          (S_Funny3)
                                Unit <: Top->Top
+      progress becomes false. (\x:Top->Top. x unit) will yield 
+      (unit unit), this term is well typed but cannot step.
+      preservation remains true
 
     - Suppose we add the following subtyping rule:
 
                                ----------------          (S_Funny4)
                                Top->Top <: Unit
+      intuitively both remain true, unit is equivalent to Top 
 
     - Suppose we add the following reduction rule:
 
                              ---------------------      (ST_Funny5)
                              (unit t) --> (t unit)
+      progress remains true, because (unit t) is ill-typed, 
+      preservation becomes false (unit idB) --> (idB unit) which isn't
+      typed
 
     - Suppose we add the same reduction rule _and_ a new typing rule:
 
@@ -1675,13 +1686,14 @@ Qed.
 
                            --------------------------    (T_Funny6)
                            empty |- unit \in Top->Top
+      progress remains true, preservation remains true.
 
     - Suppose we _change_ the arrow subtyping rule to:
 
                           S1 <: T1 S2 <: T2
                           -----------------              (S_Arrow')
                           S1->S2 <: T1->T2
-
+      progress remains true, preservation becomes false
 *)
 
 (* Do not modify the following line: *)
