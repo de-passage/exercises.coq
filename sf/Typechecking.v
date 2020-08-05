@@ -352,7 +352,6 @@ Fixpoint type_check (Gamma : context) (t : tm) : option ty :=
       T2 <- type_check Gamma t;;
       return (Sum T1 T2)
   (* lists (the [tlcase] is given for free) *)
-  (* FILL IN HERE *)
   | tnil T => return (List T)
   | tcons t1 t2 =>
       T1 <- type_check Gamma t1;;
@@ -373,9 +372,22 @@ Fixpoint type_check (Gamma : context) (t : tm) : option ty :=
       | _ => None
       end
   (* unit *)
-  (* FILL IN HERE *)
+  | unit => return Unit
   (* pairs *)
-  (* FILL IN HERE *)
+  | pair t1 t2 =>
+      T1 <- type_check Gamma t1;;
+      T2 <- type_check Gamma t2;;
+      return (Prod T1 T2)
+  | fst t => 
+      match type_check Gamma t with
+      | Some (Prod T1 T2) => return T1
+      | _ => fail
+      end
+  | snd t =>
+      match type_check Gamma t with
+      | Some (Prod T1 T2) => return T2
+      | _ => fail
+      end
   (* let *)
   (* FILL IN HERE *)
   (* fix *)
@@ -457,6 +469,19 @@ Proof with eauto.
     remember (update (update Gamma x32 (List T11)) x31 T11) as Gamma'2.
     invert_typecheck Gamma'2 t3 T3.
     case_equality T2 T3.
+  - (* unit *)
+    auto.
+  - (* pair *)
+    invert_typecheck Gamma t1 T1.
+    invert_typecheck Gamma t2 T2.
+  - (* fst *)
+    invert_typecheck Gamma t T'.
+    destruct T'; try solve_by_invert.
+    inversion H0; subst...
+  - (* snd *)
+    invert_typecheck Gamma t T'.
+    destruct T'; try solve_by_invert.
+    inversion H0; subst...
   (* FILL IN HERE *)
 Qed.
 
