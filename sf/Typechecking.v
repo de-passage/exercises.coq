@@ -389,9 +389,17 @@ Fixpoint type_check (Gamma : context) (t : tm) : option ty :=
       | _ => fail
       end
   (* let *)
-  (* FILL IN HERE *)
+  | tlet x t1 t2 => 
+      T1 <- type_check Gamma t1;;
+      type_check (update Gamma x T1) t2
   (* fix *)
-  (* FILL IN HERE *)
+  | tfix t =>
+      match type_check Gamma t with
+      | Some (Arrow T1 T2) => 
+          if eqb_ty T1 T2 then return T1
+          else fail
+      | _ => fail
+      end
   | _ => None  (* ... and delete this line when you complete the exercise. *)
   end.
 
@@ -482,7 +490,11 @@ Proof with eauto.
     invert_typecheck Gamma t T'.
     destruct T'; try solve_by_invert.
     inversion H0; subst...
-  (* FILL IN HERE *)
+  - (* tlet *)
+    fully_invert_typecheck Gamma t1 T T11 T12.
+  - (* fix *)
+    fully_invert_typecheck Gamma t T T11 T12.
+    case_equality T11 T12.
 Qed.
 
 Theorem type_checking_complete : forall Gamma t T,
@@ -499,6 +511,7 @@ Proof.
     try (rewrite (eqb_ty_refl T2)); 
     eauto.
   - destruct (Gamma x); try solve_by_invert. eauto.
+  - 
   Admitted. (* ... and delete this line *)
 (* 
 Qed. (* ... and uncomment this one *)
