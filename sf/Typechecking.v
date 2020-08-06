@@ -588,19 +588,24 @@ Fixpoint stepf (t : tm) : option tm :=
       | Some t2 => return (prd t2)
       end
   | mlt t1 t2 => 
-      match stepf t1, stepf t2, t1, t2 with
-      | None, None, (const v1), (const v2) => 
+      match stepf t1, stepf t2 with
+      | None, None => 
+          v1 <- as_const t1;;
+          v2 <- as_const t2;;
           return (const (mult v1 v2))
-      | None, Some t, _, _ => return (mlt t1 t)
-      | Some t, _, _, _ => return (mlt t t2)
-      | _, _, _, _ => fail
+      | None, Some t => 
+          if is_value t1 then return (mlt t1 t) else fail
+      | Some t, _ => return (mlt t t2)
       end
   | test0 t1 t2 t3 =>
-    match stepf t1, t1 with
-    | None, const 0 => return t2
-    | None, const (S n) => return t3
-    | Some t, _ => return (test0 t t2 t3)
-    |  _, _ => fail
+    match stepf t1 with
+    | None => 
+        n <- as_const t1;;
+        match n with
+        | 0 => return t2 
+        | S _ => return t3
+        end
+    | Some t => return (test0 t t2 t3)
     end
   | tinl T t1 => 
       t' <- stepf t1;;
@@ -700,6 +705,19 @@ Proof with eauto.
   - destruct (stepf t). inversion H1; subst. apply ST_Pred...
     destruct (as_const t) eqn: D; inversion H1; subst.
     apply as_const_n in D. subst. apply ST_PredNat.
+  - destruct (stepf t1).
+    inversion H1; subst. apply ST_Mult1...
+    destruct (stepf t2). inversion H1; subst.
+    destruct (is_value t1) eqn:Dt1. apply is_value_true_iff in Dt1.
+    inversion H1; subst. apply ST_Mult2... inversion H1.
+    destruct (as_const t1) eqn:Dt1. apply as_const_n in Dt1; subst.
+    destruct (as_const t2) eqn:Dt2. apply as_const_n in Dt2; subst.
+    inversion H1; subst... inversion H1. inversion H1.
+  - destruct (stepf t1). inversion H1; subst... 
+    destruct (as_const t1) eqn:Dt1; try solve_by_invert.
+    destruct n eqn:Dn; apply as_const_n in Dt1; 
+    inversion H1; subst... 
+  
 Admitted.
 
 (* Completeness of [stepf]. *)
