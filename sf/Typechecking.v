@@ -561,6 +561,21 @@ Definition as_const (t : tm) : option nat :=
   | _ => None
   end.
 
+Inductive sum_cat : Type := 
+| cinl (T : ty) (t : tm)
+| cinr (T : ty) (t : tm)
+| cneither
+.
+
+Definition as_sum_cat (t : tm) : sum_cat :=
+  match t with
+  | tinl T t' => 
+      if is_value t' then cinl T t' else cneither
+  | tinr T t' => 
+      if is_value t' then cinr T t' else cneither
+  | _ => cneither
+  end.
+
 (* Operational semantics as a Coq function. *)
 Fixpoint stepf (t : tm) : option tm :=
   match t with
@@ -614,16 +629,15 @@ Fixpoint stepf (t : tm) : option tm :=
       t' <- stepf t1;;
       return (tinr T t')
   | tcase t0 y1 t1 y2 t2 =>
-      match stepf t0, stepf t1, stepf t2, t0 with
-      | None, None, None, (tinl T t) => return [y1:=t]t1
-      | None, None, None, (tinr T t) => return [y2:=t]t2
-      | None, None, Some t, _ => 
-          return (tcase t0 y1 t1 y2 t)
-      | None, Some t, _, _ => 
-          return (tcase t0 y1 t y2 t2)
-      | Some t, _, _, _ => 
+      match stepf t0 with
+      | Some t => 
           return (tcase t y1 t1 y2 t2)
-      | _, _, _, _ => fail
+      | None => 
+          match as_sum_cat t0 with
+          | cinl _ t => return [y1:=t]t1
+          | cinr _ t => return [y2:=t]t2
+          | cneither => fail
+          end
       end
   | tnil T => fail
   | tcons t1 t2 =>
@@ -681,6 +695,46 @@ Proof.
   inversion H; auto.
 Qed.
 
+Lemma as_sum_cat_inl: forall t0 T t,
+    as_sum_cat t0 = cinl T t <-> 
+    t0 = tinl T t /\ value t.
+Proof with auto. 
+  induction t0; split; intros;
+  try inversion H; try solve_by_invert; simpl in H...
+  - destruct (is_value t0) eqn: D; inversion H; subst.
+    apply is_value_true_iff in D... 
+  - inversion H0; subst... simpl. 
+    apply is_value_true_iff in H1. 
+    destruct (is_value t1)... discriminate.
+  - destruct (is_value t0); inversion H...
+Qed.
+
+Lemma as_sum_cat_inr: forall t0 T t,
+    as_sum_cat t0 = cinr T t <->
+    t0 = tinr T t /\ value t.
+Proof with auto.
+  induction t0; split; intros;
+  try inversion H; try solve_by_invert; simpl in H...
+  - destruct (is_value t0) eqn: D; inversion H; subst.
+  - destruct (is_value t0) eqn: D; inversion H; subst. 
+    apply is_value_true_iff in D...
+  - simpl. inversion H0; subst. 
+    destruct (is_value t1) eqn: D... 
+    apply is_value_true_iff in H1.
+    rewrite H1 in D. discriminate.
+Qed.
+
+Lemma as_sum_cat_value: forall t t' T,
+  as_sum_cat t = cinl T t' \/ as_sum_cat t = cinr T t'
+  -> value t.
+Proof with auto.
+  induction t; intros; try solve_by_invert; inversion H; subst; simpl; (try inversion H0; subst);
+      try (destruct (is_value t0) eqn:D); 
+      try apply is_value_true_iff in D; 
+      try constructor;
+      try inversion H2; subst...
+Qed.
+
 (* Soundness of [stepf]. *)
 Theorem sound_stepf : forall t t',
     stepf t = Some t'  ->  t --> t'.
@@ -717,7 +771,14 @@ Proof with eauto.
     destruct (as_const t1) eqn:Dt1; try solve_by_invert.
     destruct n eqn:Dn; apply as_const_n in Dt1; 
     inversion H1; subst... 
-  
+  - destruct (stepf t0); inversion H1; subst...
+  - destruct (stepf t0); inversion H1; subst...
+  - destruct (stepf t1); inversion H1; subst...
+    destruct (as_sum_cat t1) eqn:Dt3; inversion H1; 
+    subst; assert (value t1); 
+    try (apply as_sum_cat_inl in Dt3 as [H' Hv]; subst);
+    try (apply as_sum_cat_inr in Dt3 as [Ht Hv]; subst)...
+  - 
 Admitted.
 
 (* Completeness of [stepf]. *)
