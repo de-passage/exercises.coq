@@ -1202,11 +1202,13 @@ Inductive step : tm -> tm -> Prop :=
       (fst t1) --> (fst t1')
   | ST_FstPair : forall v1 v2,
       value v1 -> 
+      value v2 ->
       (fst (pair v1 v2)) --> v1
   | ST_Snd1 : forall t1 t1',
       t1 --> t1' ->
       (snd t1) --> (snd t1')
   | ST_SndPair : forall v1 v2,
+      value v1 ->
       value v2 -> 
       (snd (pair v1 v2)) --> v2
   (* let *)

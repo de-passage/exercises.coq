@@ -666,8 +666,28 @@ Fixpoint stepf (t : tm) : option tm :=
       | Some t, _ => return (pair t t2)
       | _, _ => fail
       end
-  | fst t => t' <- stepf t;; return (fst t')
-  | snd t => t' <- stepf t;; return (snd t')
+  | fst t => 
+      match stepf t with
+      | Some t' => return (fst t')
+      | None => 
+          match t with
+          | pair t1 t2 => 
+              if is_value t1 && is_value t2 
+              then return t1 else fail
+          | _ => fail
+          end
+      end
+  | snd t =>
+      match stepf t with
+      | Some t' => return (snd t')
+      | None => 
+          match t with
+          | pair t1 t2 => 
+              if is_value t1 && is_value t2 
+              then return t2 else fail
+          | _ => fail
+          end
+      end
   | tlet y t1 t2 => 
       match stepf t1 with
       | None => if is_value t1 then return [y:=t1]t2 else fail
@@ -801,7 +821,17 @@ Proof with eauto.
     destruct (is_value t1) eqn: D. apply is_value_true_iff in D.
     inversion H1... inversion H1. 
   - destruct (stepf t); inversion H1...
+    destruct t; try solve_by_invert.
+    destruct (is_value t1) eqn:D1; try (solve [inversion H1]).
+    destruct (is_value t2) eqn:D2; inversion H1; subst. 
+    apply is_value_true_iff in D1.
+    apply is_value_true_iff in D2...
   - destruct (stepf t); inversion H1...
+    destruct t; try solve_by_invert.
+    destruct (is_value t1) eqn:D1; try (solve [inversion H1]).
+    destruct (is_value t2) eqn:D2; inversion H1; subst.
+    apply is_value_true_iff in D1.
+    apply is_value_true_iff in D2...
   - destruct (stepf t1); inversion H1... 
     destruct (is_value t1) eqn:D; inversion H1; 
     apply is_value_true_iff in D...
@@ -857,7 +887,32 @@ Proof with eauto.
     - apply IHt1 in H6. rewrite H6...
     - assert (value (tcons v1 vl)) by auto. 
       apply stepf_value_fail in H0. rewrite H0...
-Admitted.
+      apply is_value_true_iff in H6. 
+      apply is_value_true_iff in H7. rewrite H6, H7...
+  + inversion H; subst...
+    - apply IHt1 in H3. rewrite H3...
+    - pose proof (stepf_value_fail _ H2). rewrite H0.
+      apply IHt2 in H4. rewrite H4. 
+      apply is_value_true_iff in H2. rewrite H2...
+  + inversion H; subst...
+    - apply IHt in H1. rewrite H1...
+    - simpl. pose proof (stepf_value_fail _ H1). 
+      rewrite H0. pose proof (stepf_value_fail _ H2).
+      rewrite H3. apply is_value_true_iff in H1. 
+      rewrite H1. apply is_value_true_iff in H2. rewrite H2...
+  + inversion H; subst...
+    - apply IHt in H1. rewrite H1...
+    - simpl. pose proof (stepf_value_fail _ H1). rewrite H0.
+      pose proof (stepf_value_fail _ H2). rewrite H3.
+      apply is_value_true_iff in H1. apply is_value_true_iff in H2.
+      rewrite H1, H2...
+  + inversion H; subst... 
+    - apply IHt1 in H4. rewrite H4...
+    - pose proof (stepf_value_fail _ H4). rewrite H0.
+      apply is_value_true_iff in H4. rewrite H4...
+  + inversion H; subst...
+    apply IHt in H1. rewrite H1...
+Qed.
 End StepFunction.
 (** [] *)
 
