@@ -650,14 +650,19 @@ Fixpoint stepf (t : tm) : option tm :=
   | tlcase t1 t2 y1 y2 t3 =>
       match stepf t1, t1 with
       | None, tnil T => return t2
-      | None, tcons h t => return [y2:=t]([y1:=h]t3)
+      | None, tcons h t => 
+          if is_value h && is_value t then 
+              return [y2:=t]([y1:=h]t3)
+          else
+              fail
       | Some t, _ => return (tlcase t t2 y1 y2 t3)
       | _, _ => fail
       end
   | unit => fail
   | pair t1 t2 => 
       match stepf t1, stepf t2 with
-      | None, Some t => return (pair t1 t)
+      | None, Some t => 
+          if is_value t1 then return (pair t1 t) else fail
       | Some t, _ => return (pair t t2)
       | _, _ => fail
       end
@@ -665,13 +670,14 @@ Fixpoint stepf (t : tm) : option tm :=
   | snd t => t' <- stepf t;; return (snd t')
   | tlet y t1 t2 => 
       match stepf t1 with
-      | None => return [y:=t1]t2
+      | None => if is_value t1 then return [y:=t1]t2 else fail
       | Some t => return (tlet y t t2)
       end
   | tfix t =>
       match stepf t, t with
-      | None, abs x T t' => return [x:=(tfix (abs x T t'))]t
-      | t, _ => t
+      | None, abs x T t' => return [x:=(tfix (abs x T t'))]t'
+      | Some t, _ => return (tfix t)
+      | _, _ => fail
       end
   end.
   
@@ -783,7 +789,25 @@ Proof with eauto.
     destruct (stepf t2); inversion H1; subst.
     destruct (is_value t1) eqn:D; inversion H1; subst.
     apply is_value_true_iff in D...
-Admitted.
+  - destruct (stepf t1); inversion H1...
+    destruct t1 eqn:D; try solve_by_invert; inversion H1; 
+    subst... 
+    destruct (is_value t4) eqn:Dt4, (is_value t5) eqn:Dt5;
+    simpl in *; clear H; inversion H1.
+    apply is_value_true_iff in Dt4. 
+    apply is_value_true_iff in Dt5...
+  - destruct (stepf t1) eqn: Dt1; inversion H1...
+    destruct (stepf t2); inversion H1; subst...
+    destruct (is_value t1) eqn: D. apply is_value_true_iff in D.
+    inversion H1... inversion H1. 
+  - destruct (stepf t); inversion H1...
+  - destruct (stepf t); inversion H1...
+  - destruct (stepf t1); inversion H1... 
+    destruct (is_value t1) eqn:D; inversion H1; 
+    apply is_value_true_iff in D...
+  - destruct (stepf t); inversion H1; subst...
+    destruct t; try solve_by_invert. inversion H1; subst...
+Qed.
 
 Lemma stepf_value_fail: forall t, 
   value t -> stepf t = fail.
