@@ -585,14 +585,16 @@ Fixpoint stepf (t : tm) : option tm :=
       match stepf t1, stepf t2, t1, t2 with
       | None, None, (const v1), (const v2) => 
           return (const (mult v1 v2))
-      | None, Some t, _, _ => return t
-      | t, _, _, _ => t
+      | None, Some t, _, _ => return (mlt t1 t)
+      | Some t, _, _, _ => return (mlt t t2)
+      | _, _, _, _ => fail
       end
   | test0 t1 t2 t3 =>
     match stepf t1, t1 with
     | None, const 0 => return t2
     | None, const (S n) => return t3
-    | t, _ => t
+    | Some t, _ => return (test0 t t2 t3)
+    |  _, _ => fail
     end
   | tinl T t1 => 
       t' <- stepf t1;;
@@ -604,34 +606,41 @@ Fixpoint stepf (t : tm) : option tm :=
       match stepf t0, stepf t1, stepf t2, t0 with
       | None, None, None, (tinl T t) => return [y1:=t]t1
       | None, None, None, (tinr T t) => return [y2:=t]t2
-      | None, None, Some t, _ => return t
-      | None, Some t, _, _ => return t
-      | t, _, _, _ => t
+      | None, None, Some t, _ => 
+          return (tcase t0 y1 t1 y2 t)
+      | None, Some t, _, _ => 
+          return (tcase t0 y1 t y2 t2)
+      | Some t, _, _, _ => 
+          return (tcase t y1 t1 y2 t2)
+      | _, _, _, _ => fail
       end
   | tnil T => fail
   | tcons t1 t2 =>
       match stepf t1, stepf t2 with
-      | None, Some t => return t 
-      | t, _ => t
+      | None, Some t => return (tcons t1 t)
+      | Some t, _ => return (tcons t t2)
+      | _, _ => fail
       end
   | tlcase t1 t2 y1 y2 t3 =>
       match stepf t1, t1 with
       | None, tnil T => return t2
       | None, tcons h t => return [y1:=h]([y2:=t]t3)
-      | t, _ => t
+      | Some t, _ => return (tlcase t t2 y1 y2 t3)
+      | _, _ => fail
       end
   | unit => fail
   | pair t1 t2 => 
       match stepf t1, stepf t2 with
-      | None, Some t => return t
-      | t, _ => t
+      | None, Some t => return (pair t1 t)
+      | Some t, _ => return (pair t t2)
+      | _, _ => fail
       end
-  | fst t => stepf t
-  | snd t => stepf t
+  | fst t => t' <- stepf t;; return (fst t')
+  | snd t => t' <- stepf t;; return (snd t')
   | tlet y t1 t2 => 
       match stepf t1 with
       | None => return [y:=t1]t2
-      | t => t
+      | Some t => return (tlet y t t2)
       end
   | tfix t =>
       match stepf t, t with
@@ -672,7 +681,7 @@ Proof with eauto.
     inversion H1; subst. apply ST_AppAbs.
     apply is_value_true_iff in Dv2...
   - destruct (stepf t) eqn:Dt. 
-    destruct t; try solve_by_invert...
+    destruct t. try solve_by_invert...
     apply ST_Suc.
 
 (* Completeness of [stepf]. *)
