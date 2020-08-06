@@ -542,6 +542,19 @@ Module StepFunction.
 Import MoreStlc.
 Import STLCExtended.
 
+Fixpoint is_value (t : tm) : bool :=
+  match t with
+  | const _ => true
+  | abs _ _ _ => true
+  | tinl _ v => is_value v
+  | tinr _ v => is_value v
+  | tnil _ => true
+  | tcons h t => is_value h && is_value t
+  | unit => true
+  | pair v1 v2 => is_value v1 && is_value v2
+  | _ => false
+  end.
+
 (* Operational semantics as a Coq function. *)
 Fixpoint stepf (t : tm) : option tm :=
   match t with
@@ -549,14 +562,25 @@ Fixpoint stepf (t : tm) : option tm :=
   | abs y T t1 => None
   | app t1 t2 =>
     match stepf t1, stepf t2, t1 with
-    | None, None, abs x T t' => return [x:= t2]t' 
-    | None, Some t, _  => return t
-    | t, _, _ => t
+    | None, None, abs x T t' => 
+        if is_value t2 then return [x:= t2]t' else fail
+    | None, Some t, _  => 
+        if is_value t1 then return (app t1 t) else fail
+    | Some t, _, _ => return (app t t2)
+    | _, _, _ => fail
     end
     
   | const n => fail
-  | scc t1 => stepf t1
-  | prd t1 => stepf t1
+  | scc t1 => 
+      match t1 with
+      | (const n) => return (const (S n))
+      | _ => t2 <- stepf t1;; return (scc t2)
+      end
+  | prd t1 => 
+      match t1 with
+      | (const n) => return (const (pred n))
+      | _ => t2 <- stepf t1;; return (prd t2)
+      end
   | mlt t1 t2 => 
       match stepf t1, stepf t2, t1, t2 with
       | None, None, (const v1), (const v2) => 
@@ -570,8 +594,12 @@ Fixpoint stepf (t : tm) : option tm :=
     | None, const (S n) => return t3
     | t, _ => t
     end
-  | tinl T t1 => stepf t1
-  | tinr T t1 => stepf t1
+  | tinl T t1 => 
+      t' <- stepf t1;;
+      return (tinl T t')
+  | tinr T t1 => 
+      t' <- stepf t1;;
+      return (tinr T t')
   | tcase t0 y1 t1 y2 t2 =>
       match stepf t0, stepf t1, stepf t2, t0 with
       | None, None, None, (tinl T t) => return [y1:=t]t1
@@ -612,11 +640,40 @@ Fixpoint stepf (t : tm) : option tm :=
       end
   end.
   
+Lemma is_value_true_iff: forall v,
+  is_value v = true <-> value v.
+Proof.
+  Hint Constructors value.
+  intros v; induction v; split; intros; 
+  try solve_by_invert; auto; simpl in H;
+  try (apply IHv in H; auto);
+  try (inversion H; subst; simpl; apply IHv in H1; auto);
+  try (apply andb_true_iff in H as [H1 H2];
+    apply IHv1 in H1; apply IHv2 in H2; auto);
+  try (inversion H; simpl; subst; apply andb_true_intro;
+    apply IHv1 in H2; apply IHv2 in H3; auto).
+Qed.
 
 (* Soundness of [stepf]. *)
 Theorem sound_stepf : forall t t',
     stepf t = Some t'  ->  t --> t'.
-Proof. (* FILL IN HERE *) Admitted.
+Proof with eauto. 
+  intros t. induction t; intros; try inversion H.
+  - destruct (stepf t1) eqn:Dt1.
+    inversion H1; subst.
+    apply ST_App1. apply IHt1...
+    destruct (stepf t2) eqn:Dt2.
+    destruct (is_value t1) eqn:Dv1.
+    inversion H1; subst. apply ST_App2.
+    apply is_value_true_iff in Dv1. auto. 
+    apply IHt2; auto. inversion H1.
+    destruct t1; try solve_by_invert.
+    destruct (is_value t2) eqn:Dv2; try solve_by_invert.
+    inversion H1; subst. apply ST_AppAbs.
+    apply is_value_true_iff in Dv2...
+  - destruct (stepf t) eqn:Dt. 
+    destruct t; try solve_by_invert...
+    apply ST_Suc.
 
 (* Completeness of [stepf]. *)
 Theorem complete_stepf : forall t t',
