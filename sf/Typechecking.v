@@ -16,7 +16,7 @@
 (** This short chapter constructs such a function and proves it
     correct. *)
 
-Set Warnings "-notation-overridden,-parsing".
+Set Warnings "-notation-overridden,-parsing,-implicit-core-hint-db".
 From Coq Require Import Bool.Bool.
 From LF Require Import Maps.
 From PLF Require Import Smallstep.
@@ -642,14 +642,15 @@ Fixpoint stepf (t : tm) : option tm :=
   | tnil T => fail
   | tcons t1 t2 =>
       match stepf t1, stepf t2 with
-      | None, Some t => return (tcons t1 t)
+      | None, Some t => 
+          if is_value t1 then return (tcons t1 t) else fail
       | Some t, _ => return (tcons t t2)
       | _, _ => fail
       end
   | tlcase t1 t2 y1 y2 t3 =>
       match stepf t1, t1 with
       | None, tnil T => return t2
-      | None, tcons h t => return [y1:=h]([y2:=t]t3)
+      | None, tcons h t => return [y2:=t]([y1:=h]t3)
       | Some t, _ => return (tlcase t t2 y1 y2 t3)
       | _, _ => fail
       end
@@ -778,14 +779,61 @@ Proof with eauto.
     subst; assert (value t1); 
     try (apply as_sum_cat_inl in Dt3 as [H' Hv]; subst);
     try (apply as_sum_cat_inr in Dt3 as [Ht Hv]; subst)...
-  - 
+  - destruct (stepf t1); inversion H1...
+    destruct (stepf t2); inversion H1; subst.
+    destruct (is_value t1) eqn:D; inversion H1; subst.
+    apply is_value_true_iff in D...
 Admitted.
+
+Lemma stepf_value_fail: forall t, 
+  value t -> stepf t = fail.
+Proof with auto.
+  induction t; intros; try solve_by_invert; simpl; 
+  inversion H; subst...
+  - apply IHt in H1. rewrite H1...
+  - apply IHt in H1. rewrite H1...
+  - apply IHt1 in H2. apply IHt2 in H3. rewrite H2, H3...
+  - apply IHt1 in H2. apply IHt2 in H3. rewrite H2, H3...
+Qed.
 
 (* Completeness of [stepf]. *)
 Theorem complete_stepf : forall t t',
     t --> t'  ->  stepf t = Some t'.
-Proof. (* FILL IN HERE *) Admitted.
-
+Proof with eauto. 
+  induction t; intros; try solve_by_invert; simpl.
+  + inversion H; subst.
+    - pose proof (stepf_value_fail _ H3). rewrite H0. 
+      apply is_value_true_iff in H3. rewrite H3...
+    - apply IHt1 in H3. rewrite H3...
+    - pose proof (stepf_value_fail _ H2). rewrite H0. 
+      apply IHt2 in H4. rewrite H4. 
+      apply is_value_true_iff in H2. rewrite H2...
+  + inversion H; subst... apply IHt in H1. rewrite H1...
+  + inversion H; subst... apply IHt in H1. rewrite H1...
+  + inversion H; subst... 
+    - apply IHt1 in H3. rewrite H3...
+    - pose proof (stepf_value_fail _ H2). rewrite H0.
+      apply IHt2 in H4. rewrite H4. 
+      apply is_value_true_iff in H2. rewrite H2...
+  + inversion H; subst... apply IHt1 in H4. rewrite H4...
+  + inversion H; subst. apply IHt in H3. rewrite H3...
+  + inversion H; subst. apply IHt in H3. rewrite H3...
+  + inversion H; subst; simpl. 
+    - apply IHt1 in H6. rewrite H6...
+    - pose proof (stepf_value_fail _ H6). rewrite H0.
+      apply is_value_true_iff in H6. rewrite H6...
+    - pose proof (stepf_value_fail _ H6). rewrite H0.
+      apply is_value_true_iff in H6. rewrite H6...
+  + inversion H; subst. 
+    - apply IHt1 in H3. rewrite H3...
+    - pose proof (stepf_value_fail _ H2). rewrite H0.
+      apply IHt2 in H4. rewrite H4. 
+      apply is_value_true_iff in H2. rewrite H2...
+  + inversion H; subst...
+    - apply IHt1 in H6. rewrite H6...
+    - assert (value (tcons v1 vl)) by auto. 
+      apply stepf_value_fail in H0. rewrite H0...
+Admitted.
 End StepFunction.
 (** [] *)
 
