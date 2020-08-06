@@ -555,6 +555,12 @@ Fixpoint is_value (t : tm) : bool :=
   | _ => false
   end.
 
+Definition as_const (t : tm) : option nat :=
+  match t with
+  | const n => Some n
+  | _ => None
+  end.
+
 (* Operational semantics as a Coq function. *)
 Fixpoint stepf (t : tm) : option tm :=
   match t with
@@ -572,14 +578,14 @@ Fixpoint stepf (t : tm) : option tm :=
     
   | const n => fail
   | scc t1 => 
-      match t1 with
-      | (const n) => return (const (S n))
-      | _ => t2 <- stepf t1;; return (scc t2)
+      match stepf t1 with
+      | None => n <- as_const t1;; return (const (S n))
+      | Some t => return (scc t)
       end
   | prd t1 => 
-      match t1 with
-      | (const n) => return (const (pred n))
-      | _ => t2 <- stepf t1;; return (prd t2)
+      match stepf t1 with
+      | None => n <- as_const t1;; return (const (pred n))
+      | Some t2 => return (prd t2)
       end
   | mlt t1 t2 => 
       match stepf t1, stepf t2, t1, t2 with
@@ -663,6 +669,13 @@ Proof.
     apply IHv1 in H2; apply IHv2 in H3; auto).
 Qed.
 
+Lemma as_const_n: forall t n,
+  as_const t = return n <-> t = (const n).
+Proof.
+  induction t; split; intros; try solve_by_invert;
+  inversion H; auto.
+Qed.
+
 (* Soundness of [stepf]. *)
 Theorem sound_stepf : forall t t',
     stepf t = Some t'  ->  t --> t'.
@@ -681,8 +694,13 @@ Proof with eauto.
     inversion H1; subst. apply ST_AppAbs.
     apply is_value_true_iff in Dv2...
   - destruct (stepf t) eqn:Dt. 
-    destruct t. try solve_by_invert...
-    apply ST_Suc.
+    inversion H1; subst. apply ST_Succ1. apply IHt...
+    destruct (as_const t) eqn: D; inversion H1; subst.
+    apply as_const_n in D. subst. apply ST_SuccNat.
+  - destruct (stepf t). inversion H1; subst. apply ST_Pred...
+    destruct (as_const t) eqn: D; inversion H1; subst.
+    apply as_const_n in D. subst. apply ST_PredNat.
+Admitted.
 
 (* Completeness of [stepf]. *)
 Theorem complete_stepf : forall t t',
