@@ -1,9 +1,9 @@
 (** * Records: Adding Records to STLC *)
 
-Set Warnings "-notation-overridden,-parsing".
+Set Warnings "-notation-overridden,-parsing,-implicit-core-hint-db".
 From Coq Require Import Strings.String.
 From LF Require Import Maps.
-From PLF Require Import Imp.
+From LF Require Import Imp.
 From PLF Require Import Smallstep.
 From PLF Require Import Stlc.
 
@@ -388,7 +388,12 @@ Lemma typing_example_2 :
              trnil))) \in
     (Arrow B B).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eapply T_App.
+  eapply T_Abs; auto.
+  eapply T_Proj. apply T_Var. 
+  unfold update, t_update. reflexivity.
+  auto. auto. auto.
+Qed.
 
 Example typing_nonexample :
   ~ exists T,
@@ -397,7 +402,9 @@ Example typing_nonexample :
                (rcons i1 (abs a B (var a)) (var a)) \in
                T.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros [T contra].
+  inversion contra; subst. inversion H7.
+Qed.
 
 Example typing_nonexample_2 : forall y,
   ~ exists T,
@@ -407,7 +414,10 @@ Example typing_nonexample_2 : forall y,
                    (rcons i1 (var y) (rcons i2 (var y) trnil))) \in
            T.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros y [T contra].
+  inversion contra; subst. inversion H2; subst. 
+  inversion H4; subst. inversion H10.
+Qed.
 
 (* ================================================================= *)
 (** ** Properties of Typing *)
