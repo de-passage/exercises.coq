@@ -12,3 +12,4 @@ Unsolved:
  + StlcProp.v: stlc_arith
  + Sub.v: products
  + Typechecking.v: stlc_imp
+ + References.v: garbage_collector
