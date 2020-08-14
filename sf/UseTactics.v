@@ -14,15 +14,15 @@ Set Warnings "-notation-overridden,-parsing".
 
 From Coq Require Import Arith.Arith.
 
-From PLF Require Import Maps.
-From PLF Require Import Imp.
+From LF Require Import Maps.
+From LF Require Import Imp.
 From PLF Require Import Types.
 From PLF Require Import Smallstep.
 From PLF Require Import LibTactics.
 
 From PLF Require Stlc.
 From PLF Require Equiv.
-From PLF Require Imp.
+From LF Require Imp.
 From PLF Require References.
 From PLF Require Smallstep.
 From PLF Require Hoare.

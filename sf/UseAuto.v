@@ -28,12 +28,12 @@
 
 From Coq Require Import Arith.Arith.
 
-From PLF Require Import Maps.
+From LF Require Import Maps.
 From PLF Require Import Smallstep.
 From PLF Require Import Stlc.
 From PLF Require Import LibTactics.
 
-From PLF Require Imp.
+From LF Require Imp.
 
 From Coq Require Import Lists.List.
 Import ListNotations.
